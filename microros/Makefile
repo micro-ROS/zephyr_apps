@@ -53,7 +53,7 @@ colcon_compile:
 		--merge-install \
 		--packages-ignore-regex=.*_cpp \
 		--cmake-args \
-		-DCMAKE_POSITION_INDEPENDENT_CODE=OFF \
+		-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=OFF \
 		-DTHIRDPARTY=ON \
 		-DBUILD_SHARED_LIBS=OFF \
 		-DBUILD_TESTING=OFF \
@@ -71,5 +71,5 @@ libmicroros: colcon_compile
 		done; \
 		cd ..; rm -rf $$folder; \
 	done ; \
-	$(AR) rc libmicroros.a *.obj; mkdir -p $(BUILD_DIR); cp libmicroros.a $(BUILD_DIR); ranlib $(BUILD_DIR)/libmicroros.a; \
+	$(AR) rc libmicroros.a *.obj; cp libmicroros.a ../install/; ranlib ../install/libmicroros.a; \
 	cd ..; rm -rf libmicroros;

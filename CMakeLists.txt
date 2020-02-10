@@ -25,16 +25,13 @@ set(external_project_cflags
     )
 
 set(external_project_cxxflags
-    "${includes_cxx} ${definitions_cxx} ${options_cxx} ${system_includes_cxx}"
+    "${includes_cxx} ${definitions_cxx} ${options_cxx} ${system_includes_cxx}" 
     )
 
 include(ExternalProject)
 
 set(mylib_src_dir   ${CMAKE_CURRENT_SOURCE_DIR}/microros)
 set(mylib_build_dir ${CMAKE_CURRENT_BINARY_DIR}/microros)
-
-set(MYLIB_LIB_DIR     ${CMAKE_CURRENT_SOURCE_DIR}/../mcu_ws/install)
-set(MYLIB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../mcu_ws/install/include)
 
 if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")
 set(submake "$(MAKE)")
@@ -61,6 +58,11 @@ ExternalProject_Add(
     BUILD_BYPRODUCTS ${MYLIB_LIB_DIR}/libmicroros.a
     )
 
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../mcu_ws/install)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../mcu_ws/install/include)
+
+set(MYLIB_LIB_DIR     ${CMAKE_CURRENT_SOURCE_DIR}/../mcu_ws/install)
+set(MYLIB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../mcu_ws/install/include)
 
 add_library(mylib_lib STATIC IMPORTED GLOBAL)
 add_dependencies(
@@ -73,5 +75,5 @@ add_dependencies(mylib_project offsets_h)
 set_target_properties(mylib_lib PROPERTIES IMPORTED_LOCATION             ${MYLIB_LIB_DIR}/libmicroros.a)
 set_target_properties(mylib_lib PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${MYLIB_INCLUDE_DIR})
 
-target_link_libraries(app PUBLIC mylib_lib)
 
+target_link_libraries(app PUBLIC mylib_lib)
