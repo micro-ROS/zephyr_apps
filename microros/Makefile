@@ -7,6 +7,14 @@ PREFIX ?= .
 OBJ_DIR ?= $(PREFIX)/obj
 LIB_DIR ?= $(PREFIX)/lib
 
+DEBUG ?= 1
+
+ifeq ($(DEBUG), 1)
+  	BUILD_TYPE = Debug
+else
+	BUILD_TYPE = Release
+endif
+
 $(warning PREFIX is $(PREFIX))
 $(warning CC is $(CC))
 $(warning AR is $(AR))
