@@ -27,29 +27,15 @@ static void uart_fifo_callback(struct device *dev)
 	}
 
 	if (uart_irq_tx_ready(dev)) {
-
-    int wrote = 1;
-    while (out_head != out_tail && wrote != 0){
-      wrote = uart_fifo_fill(dev, &uart_out_buffer[out_head],1);
-      if (wrote){
-        out_head++;
-      }
-    }    
-
+    uart_fifo_fill(dev, &uart_out_buffer[out_head++], 1);
 		if (out_head == out_tail) {
 			uart_irq_tx_disable(dev);
 		}
 	}
 
 	if (uart_irq_rx_ready(dev)) {
-    int read = 1;
-    while (read != 0){
-      read = uart_fifo_read(dev, &uart_in_buffer[in_tail], 1);
-
-      if (read){
-        in_tail = (in_tail + 1) % UART_BUFFER_SIZE;
-      }    
-    }
+    uart_fifo_read(dev, &uart_in_buffer[in_tail], 1);
+    in_tail = (in_tail + 1) % UART_BUFFER_SIZE;
   }
 }
 
