@@ -16,6 +16,7 @@
 #include <rcl_action/rcl_action.h>
 #include <rcl/error_handling.h>
 #include <std_msgs/msg/int32.h>
+#include <std_msgs/msg/bool.h>
 
 
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc);  return 1;;}}
@@ -41,10 +42,28 @@ void main(void)
 	rcl_node_t node = rcl_get_zero_initialized_node();
 	RCCHECK(rcl_node_init(&node, "int32_publisher_rcl", "", &context, &node_ops))
 
-	rcl_publisher_options_t publisher_ops = rcl_publisher_get_default_options();
-	rcl_publisher_t publisher = rcl_get_zero_initialized_publisher();
-	RCCHECK(rcl_publisher_init(&publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/tof/measure", &publisher_ops))
+	rcl_publisher_options_t publisher_measure_ops = rcl_publisher_get_default_options();
+	rcl_publisher_t publisher_measure = rcl_get_zero_initialized_publisher();
+	RCCHECK(rcl_publisher_init(&publisher_measure, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/tof/measure", &publisher_measure_ops))
 
+	rcl_publisher_options_t publisher_trigger_ops = rcl_publisher_get_default_options();
+	rcl_publisher_t publisher_trigger = rcl_get_zero_initialized_publisher();
+	RCCHECK(rcl_publisher_init(&publisher_trigger, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/tof/trigger", &publisher_trigger_ops))
+
+	rcl_subscription_options_t subscription_debug_ops = rcl_subscription_get_default_options();
+	rcl_subscription_t subscription_debug = rcl_get_zero_initialized_subscription();
+	RCCHECK(rcl_subscription_init(&subscription_debug, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/tof/debug", &subscription_debug_ops))
+
+	rcl_subscription_options_t subscription_thr_ops = rcl_subscription_get_default_options();
+	rcl_subscription_t subscription_thr = rcl_get_zero_initialized_subscription();
+	RCCHECK(rcl_subscription_init(&subscription_thr, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/tof/threshold", &subscription_thr_ops))
+
+	rcl_guard_condition_t guard_condition = rcl_get_zero_initialized_guard_condition();
+	rcl_guard_condition_options_t guard_condition_options = rcl_guard_condition_get_default_options();
+	RCCHECK(rcl_guard_condition_init(&guard_condition, &context, guard_condition_options))
+
+	 rcl_wait_set_t wait_set = rcl_get_zero_initialized_wait_set();
+  	RCCHECK(rcl_wait_set_init(&wait_set, 2, 0, 0, 0, 0, 0, &context, rcl_get_default_allocator()))
 
 	struct device *dev = device_get_binding(DT_INST_0_ST_VL53L1X_LABEL);
 	struct sensor_value value;
@@ -55,22 +74,58 @@ void main(void)
 		return;
 	}
 
-	std_msgs__msg__Int32 msg;
 
+	int32_t threshold = 300;
+	int32_t measure;
+	bool debug = false;
+	bool state = false;
 
 	while (1) {
-		ret = sensor_sample_fetch(dev);
-		if (ret) {
-			printk("sensor_sample_fetch failed ret %d\n", ret);
+		sensor_sample_fetch(dev);
+		sensor_channel_get(dev, SENSOR_CHAN_DISTANCE, &value);
+		measure = value.val1 + value.val2;
+
+		printf("Distance is %d mm\n", measure);
+
+		
+		RCSOFTCHECK(rcl_wait_set_clear(&wait_set))
+    
+		size_t index_subscription_debug;
+		RCSOFTCHECK(rcl_wait_set_add_subscription(&wait_set, &subscription_debug, &index_subscription_debug))
+
+		size_t index_subscription_thr;
+		RCSOFTCHECK(rcl_wait_set_add_subscription(&wait_set, &subscription_thr, &index_subscription_thr))
+
+		RCSOFTCHECK(rcl_wait(&wait_set, RCL_MS_TO_NS(100)))
+
+		if (wait_set.subscriptions[index_subscription_debug]) {
+			std_msgs__msg__Bool msg;
+			rcl_take(wait_set.subscriptions[index_subscription_debug], &msg, NULL, NULL);
+			debug = msg.data;
 		}
 
-		ret = sensor_channel_get(dev, SENSOR_CHAN_DISTANCE, &value);
-		// printf("distance is %.3fm\n", sensor_value_to_double(&value));
-		printf("distance is %d mm\n", value.val1 + value.val2);
+		if (wait_set.subscriptions[index_subscription_thr]) {
+			std_msgs__msg__Int32 msg;
+			rcl_take(wait_set.subscriptions[index_subscription_thr], &msg, NULL, NULL);
+			threshold = msg.data;
+		}
 
-		msg.data = value.val1 + value.val2;
 
-		rcl_publish(&publisher, (const void*)&msg, NULL);
-		// k_sleep(K_MSEC(200));
+		if (debug){
+			std_msgs__msg__Int32 msg;
+			msg.data = measure;
+			rcl_publish(&publisher_measure, (const void*)&msg, NULL);
+		}
+
+		bool old_state = state;
+		state = measure < threshold;
+
+		if (state != old_state){
+			std_msgs__msg__Bool msg;
+			msg.data = state;
+			rcl_publish(&publisher_trigger, (const void*)&msg, NULL);
+		}
+		
+		
 	}
 }
