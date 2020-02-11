@@ -25,7 +25,7 @@ extern "C"
 
 typedef struct uxrSerialPlatform
 {   
-    struct device *uart_dev
+    struct device *uart_dev;
 } uxrSerialPlatform;
 
 #ifdef __cplusplus
