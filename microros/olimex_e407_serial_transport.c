@@ -59,17 +59,19 @@ bool uxr_init_serial_platform(struct uxrSerialPlatform* platform, int fd, uint8_
   int ret;
   u32_t baudrate, dtr = 0U;
  
-  platform->uart_dev = device_get_binding("CDC_ACM_0");
+  platform->uart_dev = device_get_binding(DT_INST_0_ST_STM32_UART_LABEL);
   if (!platform->uart_dev) {
-    //LOG_ERR("CDC ACM device not found");
     return false;
   }
 
-  ret = usb_enable(NULL);
-  if (ret != 0) {
-    //LOG_ERR("Failed to enable USB");
-    return false;
-  }
+  // ret = usb_enable(NULL);
+  // if (ret != 0) {
+  //   //LOG_ERR("Failed to enable USB");
+  //   return false;
+  // }
+
+  uart_irq_rx_disable(platform->uart_dev);
+  uart_irq_tx_disable(platform->uart_dev);
 
 	uart_irq_callback_set(platform->uart_dev, uart_fifo_callback);
   uart_irq_rx_enable(platform->uart_dev);
@@ -83,18 +85,17 @@ bool uxr_close_serial_platform(struct uxrSerialPlatform* platform)
 }
 
 size_t uxr_write_serial_data_platform(uxrSerialPlatform* platform, uint8_t* buf, size_t len, uint8_t* errcode)
-{
-
+{ 
   memcpy(uart_out_buffer, buf, len);
-  out_tail = len - 1;
-  out_head = 0;
+  out_head=0;
+  out_tail= len;
 
   uart_irq_tx_enable(platform->uart_dev);
 
   while (out_head != out_tail){
-    k_sleep(K_MSEC(100));
+    k_sleep(K_MSEC(5));
   }
-
+  
   return len;
 }
 
@@ -108,6 +109,15 @@ size_t uxr_read_serial_data_platform(uxrSerialPlatform* platform, uint8_t* buf, 
     in_head = (in_head + 1) % UART_BUFFER_SIZE;
     wrote++;
   }
+
+  // printk("Recv (%d): ", wrote);
+
+  // for (size_t i = 0; i < wrote; i++)
+  // {
+  //   printk("0x%02X ", buf[i]);
+  // }
+
+  // printk("\n");
  
   return wrote;
  }
