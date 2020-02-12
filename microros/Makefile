@@ -55,7 +55,7 @@ arm_toolchain: $(EXTENSIONS_DIR)/arm_toolchain.cmake.in
 		sed "s/@CXXFLAGS@/$(subst /,\/,$(CXXFLAGS_INTERNAL))/g" \
 		> $(EXTENSIONS_DIR)/arm_toolchain.cmake
 
-colcon_compile:
+colcon_compile: arm_toolchain
 	cd $(UROS_DIR); \
 	colcon build \
 		--merge-install \
