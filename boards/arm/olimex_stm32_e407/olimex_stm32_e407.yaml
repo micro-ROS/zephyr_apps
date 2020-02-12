@@ -1,0 +1,17 @@
+identifier: olimex_stm32_e407
+name: STM32-E407
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+  - xtools
+ram: 128
+flash: 1024
+supported:
+  - counter
+  - gpio
+  - i2c
+  - usb_device
+  - vl53l1x
+

@@ -15,10 +15,10 @@
 #define UART_BUFFER_SIZE 2048
 
 static uint8_t uart_in_buffer[UART_BUFFER_SIZE];
-static size_t in_head = 0, in_tail = 0;
+static size_t in_head, in_tail;
 
 static uint8_t uart_out_buffer[UART_BUFFER_SIZE];
-static size_t out_head = 0, out_tail = 0;
+static size_t out_head, out_tail;
 
 static void uart_fifo_callback(struct device *dev)
 {
@@ -76,6 +76,11 @@ bool uxr_init_serial_platform(struct uxrSerialPlatform* platform, int fd, uint8_
 	uart_irq_callback_set(platform->uart_dev, uart_fifo_callback);
   uart_irq_rx_enable(platform->uart_dev);
   
+  in_head = 0;
+  in_tail = 0;
+  out_head = 0;
+  out_tail = 0;
+
   return true;
 }
 
@@ -103,12 +108,16 @@ size_t uxr_read_serial_data_platform(uxrSerialPlatform* platform, uint8_t* buf, 
 { 
   k_sleep(K_MSEC(timeout));
 
+  uart_irq_rx_disable(platform->uart_dev);
+
   size_t wrote = 0;
   while ((in_head != in_tail) && (wrote < len)){
     buf[wrote] = uart_in_buffer[in_head];
     in_head = (in_head + 1) % UART_BUFFER_SIZE;
     wrote++;
   }
+
+  uart_irq_rx_enable(platform->uart_dev);
 
   // printk("Recv (%d): ", wrote);
 

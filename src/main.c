@@ -18,7 +18,6 @@
 #include <std_msgs/msg/int32.h>
 #include <std_msgs/msg/bool.h>
 
-
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc);  return 1;;}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
 
@@ -58,11 +57,7 @@ void main(void)
 	rcl_subscription_t subscription_thr = rcl_get_zero_initialized_subscription();
 	RCCHECK(rcl_subscription_init(&subscription_thr, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/tof/threshold", &subscription_thr_ops))
 
-	rcl_guard_condition_t guard_condition = rcl_get_zero_initialized_guard_condition();
-	rcl_guard_condition_options_t guard_condition_options = rcl_guard_condition_get_default_options();
-	RCCHECK(rcl_guard_condition_init(&guard_condition, &context, guard_condition_options))
-
-	 rcl_wait_set_t wait_set = rcl_get_zero_initialized_wait_set();
+	rcl_wait_set_t wait_set = rcl_get_zero_initialized_wait_set();
   	RCCHECK(rcl_wait_set_init(&wait_set, 2, 0, 0, 0, 0, 0, &context, rcl_get_default_allocator()))
 
 	struct device *dev = device_get_binding(DT_INST_0_ST_VL53L1X_LABEL);
@@ -86,7 +81,6 @@ void main(void)
 		measure = value.val1 + value.val2;
 
 		printf("Distance is %d mm\n", measure);
-
 		
 		RCSOFTCHECK(rcl_wait_set_clear(&wait_set))
     
@@ -96,7 +90,7 @@ void main(void)
 		size_t index_subscription_thr;
 		RCSOFTCHECK(rcl_wait_set_add_subscription(&wait_set, &subscription_thr, &index_subscription_thr))
 
-		RCSOFTCHECK(rcl_wait(&wait_set, RCL_MS_TO_NS(100)))
+		RCSOFTCHECK(rcl_wait(&wait_set, RCL_MS_TO_NS(50)))
 
 		if (wait_set.subscriptions[index_subscription_debug]) {
 			std_msgs__msg__Bool msg;
