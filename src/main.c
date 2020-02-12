@@ -71,8 +71,8 @@ void main(void)
 
 
 	int32_t threshold = 300;
-	int32_t measure;
-	bool debug = false;
+	uint32_t measure;
+	bool debug = true;
 	bool state = false;
 
 	while (1) {
@@ -114,7 +114,7 @@ void main(void)
 		bool old_state = state;
 		state = measure < threshold;
 
-		if (state != old_state){
+		if (state != old_state || debug){
 			std_msgs__msg__Bool msg;
 			msg.data = state;
 			rcl_publish(&publisher_trigger, (const void*)&msg, NULL);
