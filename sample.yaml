@@ -3,5 +3,10 @@ sample:
 tests:
   sample.sensor.vl53l1x:
     build_only: true
-    depends_on: i2c vl53l1x
-    tags: sensors
+    depends_on: usb_device i2c vl53l1x 
+    tags: usb
+    harness: console
+    harness_config:
+      type: one_line
+      regex:
+        - "Wait for DTR"

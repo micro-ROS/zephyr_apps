@@ -7,6 +7,7 @@
 #include <zephyr.h>
 #include <device.h>
 #include <drivers/sensor.h>
+#include <drivers/gpio.h>
 #include <stdio.h>
 #include <sys/util.h>
 #include <string.h>
@@ -18,11 +19,20 @@
 #include <std_msgs/msg/int32.h>
 #include <std_msgs/msg/bool.h>
 
-#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc);  return 1;;}}
+#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc);}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
+
+#ifndef DT_ALIAS_LED0_GPIOS_FLAGS
+#define DT_ALIAS_LED0_GPIOS_FLAGS 0
+#endif
+
+static struct device *led;
 
 void main(void)
 {	
+	led = device_get_binding(DT_ALIAS_LED0_GPIOS_CONTROLLER);
+	gpio_pin_configure(led, DT_ALIAS_LED0_GPIOS_PIN, GPIO_OUTPUT_ACTIVE | DT_ALIAS_LED0_GPIOS_FLAGS);
+
 	printk("Hello World! %s\n", CONFIG_ARCH);
 
 	rcl_init_options_t options = rcl_get_zero_initialized_init_options();
@@ -62,7 +72,6 @@ void main(void)
 
 	struct device *dev = device_get_binding(DT_INST_0_ST_VL53L1X_LABEL);
 	struct sensor_value value;
-	int ret;
 
 	if (dev == NULL) {
 		printk("Could not get VL53L0X device\n");
@@ -79,8 +88,6 @@ void main(void)
 		sensor_sample_fetch(dev);
 		sensor_channel_get(dev, SENSOR_CHAN_DISTANCE, &value);
 		measure = value.val1 + value.val2;
-
-		printf("Distance is %d mm\n", measure);
 		
 		RCSOFTCHECK(rcl_wait_set_clear(&wait_set))
     
@@ -120,6 +127,27 @@ void main(void)
 			rcl_publish(&publisher_trigger, (const void*)&msg, NULL);
 		}
 		
+		gpio_pin_set(led, DT_ALIAS_LED0_GPIOS_PIN, (int)state);
+
+
+		// Serial print
+
+		printk("%04d mm / %04d mm -> %s [", measure, threshold, state ? " ON" : "OFF");
 		
+		measure = (measure < 2000) ? measure : 1999;
+		int graph = (60*measure) / (2000);
+		graph = (graph > 0) ? graph : 0;
+		for (size_t i = 0; i < graph; i++){
+			printk("-");
+		}
+		printk("|");
+		
+		int spaces = (60-graph);
+		spaces = (spaces > 0) ? spaces : 0;
+		for (size_t i = 0; i < spaces; i++){
+			printk(" ");
+		}
+		printk("]\r");
+
 	}
 }
