@@ -1,0 +1,23 @@
+@startuml
+skinparam monochrome true
+
+start
+
+repeat
+:Get sensor data Range X;
+:Get debug message configuration message;
+:Get threshold Y configuration message;
+if (Range X < Configured threshold Y) then (true)
+    :Send trigger message: true;
+else (false)
+    :Send trigger message: false;
+endif
+
+if (Debug configuration value) then (true)
+    :Send meassure message: Range X;
+endif
+repeat while(true) is (true)
+->false;
+stop
+
+@enduml
