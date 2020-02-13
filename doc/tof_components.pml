@@ -6,7 +6,7 @@ package "micro-ROS" {
     [Sensor] as s
     [micro-ROS Client] as urosc
     [micro-ROS Agent] as urosa
-    () "SPI" as spi
+    () "I2C" as I2C
     () "DDS-XRCE(Serial)" as ddsx
 }
 
@@ -15,7 +15,7 @@ package "micro-ROS" {
 () "/tof/threshold\n[std_msgs/msg/Int32]" as threshold
 () "/tof/trigger\n[std_msgs/msg/Bool]" as trigger
 () "/tof/measure\n[std_msgs/msg/Int32]" as meassure
-() "/tof/debug\n[std_msgs/msg/Bool]" as debug
+() "/tof/verbose\n[std_msgs/msg/Int32]" as debug
 
 ros -down-> debug
 ros -down-> threshold
@@ -27,9 +27,8 @@ urosa <-up- threshold
 urosa -up-> meassure
 urosa -up-> trigger
 
-s <-right-> spi
-urosc <-left-> spi
+s <-right-> I2C
+urosc <-left-> I2C
 urosc <-right-> ddsx
 urosa <-left-> ddsx
-
 @enduml

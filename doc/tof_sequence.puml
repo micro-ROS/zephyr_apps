@@ -12,18 +12,26 @@ loop
     s -> uros: Range x
     activate s
 end
+    == Verbose 0 ==
+    uros <-- ros: /tof/verbose [std_msgs/msg/Int32]\n'{data: 0}'
     uros <-- ros: /tof/threshold [std_msgs/msg/Int32]\n'{data: y}'
     alt Object in range: x < y
         uros -> ros: /tof/trigger [std_msgs/msg/Bool]\n'{data: true}'
     else Object out of range: x >= y
         uros -> ros: /tof/trigger [std_msgs/msg/Bool]\n'{data: false}'
     end
-    == Debug messages ==
-    uros <-- ros: /tof/debug [std_msgs/msg/Bool]\n'{data: true}'
-    activate uros
-    loop
-    uros -> ros: /tof/measure [std_msgs/msg/Int32]\n'{data: x}'
+    == Verbose 1 ==
+    uros <-- ros: /tof/verbose [std_msgs/msg/Int32]\n'{data: 1}'
+    uros <-- ros: /tof/threshold [std_msgs/msg/Int32]\n'{data: y}'
+    loop 
+        uros -> ros: /tof/trigger [std_msgs/msg/Bool]\n'{data: x < y}'
     end
-    uros <-- ros: /tof/debug [std_msgs/msg/Bool]\n'{data: false}'
-    deactivate uros
+    == Verbose 2 ==
+    uros <-- ros: /tof/verbose [std_msgs/msg/Int32]\n'{data: 2}'
+    uros <-- ros: /tof/threshold [std_msgs/msg/Int32]\n'{data: y}'
+    loop 
+        uros -> ros: /tof/trigger [std_msgs/msg/Bool]\n'{data: x < y}'
+        uros -> ros: /tof/measure [std_msgs/msg/Int32]\n'{data: x}'
+
+    end
 @enduml

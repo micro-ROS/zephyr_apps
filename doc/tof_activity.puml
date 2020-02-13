@@ -13,11 +13,10 @@ else (false)
     :Send trigger message: false;
 endif
 
-if (Debug configuration value) then (true)
+if (Verbose configuration value) then (true)
     :Send meassure message: Range X;
 endif
 repeat while(true) is (true)
 ->false;
 stop
-
 @enduml
