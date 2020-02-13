@@ -61,7 +61,7 @@ void main(void)
 
 	rcl_subscription_options_t subscription_debug_ops = rcl_subscription_get_default_options();
 	rcl_subscription_t subscription_debug = rcl_get_zero_initialized_subscription();
-	RCCHECK(rcl_subscription_init(&subscription_debug, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/tof/debug", &subscription_debug_ops))
+	RCCHECK(rcl_subscription_init(&subscription_debug, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/tof/verbose", &subscription_debug_ops))
 
 	rcl_subscription_options_t subscription_thr_ops = rcl_subscription_get_default_options();
 	rcl_subscription_t subscription_thr = rcl_get_zero_initialized_subscription();
@@ -81,7 +81,7 @@ void main(void)
 
 	int32_t threshold = 300;
 	uint32_t measure;
-	bool debug = true;
+	int32_t debug = 2;
 	bool state = false;
 
 	while (1) {
@@ -100,7 +100,7 @@ void main(void)
 		RCSOFTCHECK(rcl_wait(&wait_set, RCL_MS_TO_NS(50)))
 
 		if (wait_set.subscriptions[index_subscription_debug]) {
-			std_msgs__msg__Bool msg;
+			std_msgs__msg__Int32 msg;
 			rcl_take(wait_set.subscriptions[index_subscription_debug], &msg, NULL, NULL);
 			debug = msg.data;
 		}
@@ -112,7 +112,7 @@ void main(void)
 		}
 
 
-		if (debug){
+		if (debug == 2){
 			std_msgs__msg__Int32 msg;
 			msg.data = measure;
 			rcl_publish(&publisher_measure, (const void*)&msg, NULL);
@@ -121,7 +121,7 @@ void main(void)
 		bool old_state = state;
 		state = measure < threshold;
 
-		if (state != old_state || debug){
+		if (state != old_state || debug >= 1){
 			std_msgs__msg__Bool msg;
 			msg.data = state;
 			rcl_publish(&publisher_trigger, (const void*)&msg, NULL);
