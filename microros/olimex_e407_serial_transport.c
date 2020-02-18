@@ -1,5 +1,4 @@
 #include "olimex_e407_serial_transport.h"
-#include "stm32f4xx_hal_dma.h"
 
 #include <unistd.h>
 #include <stdio.h>

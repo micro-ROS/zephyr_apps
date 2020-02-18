@@ -53,24 +53,16 @@ void main(void)
 
 	rcl_publisher_options_t publisher_measure_ops = rcl_publisher_get_default_options();
 	rcl_publisher_t publisher_measure = rcl_get_zero_initialized_publisher();
-	RCCHECK(rcl_publisher_init(&publisher_measure, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/tof/measure", &publisher_measure_ops))
+	RCCHECK(rcl_publisher_init(&publisher_measure, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/tof/measure2", &publisher_measure_ops))
 
-	rcl_publisher_options_t publisher_trigger_ops = rcl_publisher_get_default_options();
-	rcl_publisher_t publisher_trigger = rcl_get_zero_initialized_publisher();
-	RCCHECK(rcl_publisher_init(&publisher_trigger, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/tof/trigger", &publisher_trigger_ops))
-
-	rcl_subscription_options_t subscription_debug_ops = rcl_subscription_get_default_options();
-	rcl_subscription_t subscription_debug = rcl_get_zero_initialized_subscription();
-	RCCHECK(rcl_subscription_init(&subscription_debug, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/tof/verbose", &subscription_debug_ops))
-
-	rcl_subscription_options_t subscription_thr_ops = rcl_subscription_get_default_options();
-	rcl_subscription_t subscription_thr = rcl_get_zero_initialized_subscription();
-	RCCHECK(rcl_subscription_init(&subscription_thr, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/tof/threshold", &subscription_thr_ops))
+	rcl_subscription_options_t subscription_trigger_ops = rcl_subscription_get_default_options();
+	rcl_subscription_t subscription_trigger = rcl_get_zero_initialized_subscription();
+	RCCHECK(rcl_subscription_init(&subscription_trigger, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/tof/trigger", &subscription_trigger_ops))
 
 	rcl_wait_set_t wait_set = rcl_get_zero_initialized_wait_set();
-  	RCCHECK(rcl_wait_set_init(&wait_set, 2, 0, 0, 0, 0, 0, &context, rcl_get_default_allocator()))
+  	RCCHECK(rcl_wait_set_init(&wait_set, 1, 0, 0, 0, 0, 0, &context, rcl_get_default_allocator()))
 
-	struct device *dev = device_get_binding(DT_INST_0_ST_VL53L1X_LABEL);
+	struct device *dev = device_get_binding(DT_INST_0_ST_VL53L0X_LABEL);
 	struct sensor_value value;
 
 	if (dev == NULL) {
@@ -78,76 +70,33 @@ void main(void)
 		return;
 	}
 
-
-	int32_t threshold = 300;
 	uint32_t measure;
-	int32_t debug = 2;
-	bool state = false;
 
 	while (1) {
 		sensor_sample_fetch(dev);
 		sensor_channel_get(dev, SENSOR_CHAN_DISTANCE, &value);
 		measure = value.val1 + value.val2;
+
+		// printf("Distance is %d mm\n", measure);
 		
-		RCSOFTCHECK(rcl_wait_set_clear(&wait_set))
+		// RCSOFTCHECK(rcl_wait_set_clear(&wait_set))
     
-		size_t index_subscription_debug;
-		RCSOFTCHECK(rcl_wait_set_add_subscription(&wait_set, &subscription_debug, &index_subscription_debug))
+		// size_t index_subscription_trigger;
+		// RCSOFTCHECK(rcl_wait_set_add_subscription(&wait_set, &subscription_trigger, &index_subscription_trigger))
 
-		size_t index_subscription_thr;
-		RCSOFTCHECK(rcl_wait_set_add_subscription(&wait_set, &subscription_thr, &index_subscription_thr))
+		// RCSOFTCHECK(rcl_wait(&wait_set, RCL_MS_TO_NS(50)))
 
-		RCSOFTCHECK(rcl_wait(&wait_set, RCL_MS_TO_NS(50)))
+		// if (wait_set.subscriptions[index_subscription_trigger]) {
+		// 	std_msgs__msg__Bool msg;
+		// 	rcl_take(wait_set.subscriptions[index_subscription_trigger], &msg, NULL, NULL);
+		// 	gpio_pin_set(led, DT_ALIAS_LED0_GPIOS_PIN, (int)msg.data);
+		// }
 
-		if (wait_set.subscriptions[index_subscription_debug]) {
-			std_msgs__msg__Int32 msg;
-			rcl_take(wait_set.subscriptions[index_subscription_debug], &msg, NULL, NULL);
-			debug = msg.data;
-		}
-
-		if (wait_set.subscriptions[index_subscription_thr]) {
-			std_msgs__msg__Int32 msg;
-			rcl_take(wait_set.subscriptions[index_subscription_thr], &msg, NULL, NULL);
-			threshold = msg.data;
-		}
-
-
-		if (debug == 2){
-			std_msgs__msg__Int32 msg;
-			msg.data = measure;
-			rcl_publish(&publisher_measure, (const void*)&msg, NULL);
-		}
-
-		bool old_state = state;
-		state = measure < threshold;
-
-		if (state != old_state || debug >= 1){
-			std_msgs__msg__Bool msg;
-			msg.data = state;
-			rcl_publish(&publisher_trigger, (const void*)&msg, NULL);
-		}
 		
-		gpio_pin_set(led, DT_ALIAS_LED0_GPIOS_PIN, (int)state);
-
-
-		// Serial print
-
-		printk("%04d mm / %04d mm -> %s [", measure, threshold, state ? " ON" : "OFF");
+		std_msgs__msg__Int32 msg;
+		msg.data = measure;
+		rcl_publish(&publisher_measure, (const void*)&msg, NULL);		
 		
-		measure = (measure < 2000) ? measure : 1999;
-		int graph = (60*measure) / (2000);
-		graph = (graph > 0) ? graph : 0;
-		for (size_t i = 0; i < graph; i++){
-			printk("-");
-		}
-		printk("|");
-		
-		int spaces = (60-graph);
-		spaces = (spaces > 0) ? spaces : 0;
-		for (size_t i = 0; i < spaces; i++){
-			printk(" ");
-		}
-		printk("]\r");
-
+		k_sleep(50);
 	}
 }
