@@ -41,7 +41,7 @@ void main(void)
 
 	// Optional RMW configuration 
 	rmw_init_options_t* rmw_options = rcl_init_options_get_rmw_init_options(&options);
-	RCCHECK(rmw_uros_options_set_client_key(0xBA5EBA11, rmw_options))
+	RCCHECK(rmw_uros_options_set_client_key(0xDEADBEEF, rmw_options))
 
 	rcl_context_t context = rcl_get_zero_initialized_context();
 	RCCHECK(rcl_init(0, NULL, &options, &context))
@@ -72,31 +72,31 @@ void main(void)
 
 	uint32_t measure;
 
+	gpio_pin_set(led, DT_ALIAS_LED0_GPIOS_PIN, 0);
+
 	while (1) {
 		sensor_sample_fetch(dev);
 		sensor_channel_get(dev, SENSOR_CHAN_DISTANCE, &value);
-		measure = value.val1 + value.val2;
+		measure = value.val1;
 
-		// printf("Distance is %d mm\n", measure);
+		printf("Distance is %d mm\n", measure);
 		
-		// RCSOFTCHECK(rcl_wait_set_clear(&wait_set))
+		RCSOFTCHECK(rcl_wait_set_clear(&wait_set))
     
-		// size_t index_subscription_trigger;
-		// RCSOFTCHECK(rcl_wait_set_add_subscription(&wait_set, &subscription_trigger, &index_subscription_trigger))
+		size_t index_subscription_trigger;
+		RCSOFTCHECK(rcl_wait_set_add_subscription(&wait_set, &subscription_trigger, &index_subscription_trigger))
 
-		// RCSOFTCHECK(rcl_wait(&wait_set, RCL_MS_TO_NS(50)))
+		RCSOFTCHECK(rcl_wait(&wait_set, RCL_MS_TO_NS(50)))
 
-		// if (wait_set.subscriptions[index_subscription_trigger]) {
-		// 	std_msgs__msg__Bool msg;
-		// 	rcl_take(wait_set.subscriptions[index_subscription_trigger], &msg, NULL, NULL);
-		// 	gpio_pin_set(led, DT_ALIAS_LED0_GPIOS_PIN, (int)msg.data);
-		// }
+		if (wait_set.subscriptions[index_subscription_trigger]) {
+			std_msgs__msg__Bool msg;
+			rcl_take(wait_set.subscriptions[index_subscription_trigger], &msg, NULL, NULL);
+			gpio_pin_set(led, DT_ALIAS_LED0_GPIOS_PIN, (int)(msg.data) ? 1 : 0);
+		}
 
 		
 		std_msgs__msg__Int32 msg;
 		msg.data = measure;
 		rcl_publish(&publisher_measure, (const void*)&msg, NULL);		
-		
-		k_sleep(50);
 	}
 }
