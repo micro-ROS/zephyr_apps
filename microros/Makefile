@@ -35,7 +35,7 @@ CXXFLAGS_INTERNAL += -I$(FW_DIR)/zephyrproject/zephyr/include/posix
 # CXXFLAGS_INTERNAL += -isystem$(FW_DIR)/zephyr-sdk-0.11.1/arm-zephyr-eabi/arm-zephyr-eabi/include/c++/9.2.0/arm-zephyr-eabi/thumb/v7e-m+fp/hard
 # CXXFLAGS_INTERNAL += -isystem$(FW_DIR)/zephyr-sdk-0.11.1/arm-zephyr-eabi/arm-zephyr-eabi/include
 
-all: 
+all: libmicroros
 
 # all: colcon_compile
 # 	mkdir -p $(OBJ_DIR) $(LIB_DIR)
