@@ -43,48 +43,6 @@ static bool microros_init = false;
 static uint32_t measure_ext = 2000;
 static bool trigger = false;
 
-K_SEM_DEFINE(updating_sem, 1, 1);
-
-void led_update(void){
-	strip = device_get_binding(DT_ALIAS_LED_STRIP_LABEL);
-	while(true){
-		k_sem_take(&updating_sem, K_FOREVER);
-		// if(memcmp(pixels,old_pixels,sizeof(pixels)) != 0){
-			// memcpy(old_pixels, pixels, sizeof(pixels));
-			led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
-		// }
-		k_sem_give(&updating_sem);
-		k_sleep(K_MSEC(50));
-	}
-}
- 
-
-void led_startup(void){
-	struct led_rgb c = RGB(0x00, 0x00, 0x0f);
-
-	size_t i = 0;
-	while(!microros_init){
-		k_sem_take(&updating_sem, K_FOREVER);
-		memset(&pixels, 0x00, sizeof(pixels));
-		memcpy(&pixels[i], &c, sizeof(struct led_rgb));
-		i = (i+1)%STRIP_NUM_PIXELS;
-		k_sem_give(&updating_sem);
-		led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
-		k_sleep(K_MSEC(100));
-	}
-
-	return;
-}
-
-
-// K_THREAD_DEFINE(my_tid, 500,
-//                 led_startup, NULL, NULL, NULL,
-//                 4, 0, K_NO_WAIT);
-
-// K_THREAD_DEFINE(my_tid2, 500,
-//                 led_update, NULL, NULL, NULL,
-//                 -16, 0, K_NO_WAIT);
-
 void main(void)
 {	
 	strip = device_get_binding(DT_ALIAS_LED_STRIP_LABEL);
@@ -117,7 +75,7 @@ void main(void)
 	rcl_node_options_t node_ops = rcl_node_get_default_options();
 
 	rcl_node_t node = rcl_get_zero_initialized_node();
-	RCCHECK(rcl_node_init(&node, "int32_publisher_rcl", "", &context, &node_ops))
+	RCCHECK(rcl_node_init(&node, "zephyr_tof_leds", "", &context, &node_ops))
 
 	rcl_subscription_options_t subscription_trigger_ops = rcl_subscription_get_default_options();
 	rcl_subscription_t subscription_trigger = rcl_get_zero_initialized_subscription();
