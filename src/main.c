@@ -57,37 +57,45 @@ void led_update(void){
 		k_sleep(K_MSEC(50));
 	}
 }
+ 
 
-
-void led_management(void){
+void led_startup(void){
+	struct led_rgb c = RGB(0x00, 0x00, 0x0f);
 
 	size_t i = 0;
 	while(!microros_init){
-
 		k_sem_take(&updating_sem, K_FOREVER);
-		for(size_t j = 0 ; j < STRIP_NUM_PIXELS ; j++){
-			memcpy(&pixels[j], &colors[i], sizeof(struct led_rgb));
-		}
+		memset(&pixels, 0x00, sizeof(pixels));
+		memcpy(&pixels[i], &c, sizeof(struct led_rgb));
+		i = (i+1)%STRIP_NUM_PIXELS;
 		k_sem_give(&updating_sem);
-
-		i = (i+1)%3;
-		k_sleep(K_MSEC(300));
+		led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
+		k_sleep(K_MSEC(100));
 	}
 
 	return;
 }
 
 
-K_THREAD_DEFINE(my_tid, 500,
-                led_management, NULL, NULL, NULL,
-                2, 0, K_NO_WAIT);
+// K_THREAD_DEFINE(my_tid, 500,
+//                 led_startup, NULL, NULL, NULL,
+//                 4, 0, K_NO_WAIT);
 
-K_THREAD_DEFINE(my_tid2, 500,
-                led_update, NULL, NULL, NULL,
-                -16, 0, K_NO_WAIT);
+// K_THREAD_DEFINE(my_tid2, 500,
+//                 led_update, NULL, NULL, NULL,
+//                 -16, 0, K_NO_WAIT);
 
 void main(void)
 {	
+	strip = device_get_binding(DT_ALIAS_LED_STRIP_LABEL);
+
+	struct led_rgb c = RGB(0x00, 0x00, 0x0f);
+	for(size_t j = 0 ; j < STRIP_NUM_PIXELS ; j++){
+		memcpy(&pixels[j], &c, sizeof(struct led_rgb));
+	}
+
+	led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
+
 
 	led = device_get_binding(DT_ALIAS_LED0_GPIOS_CONTROLLER);
 	gpio_pin_configure(led, DT_ALIAS_LED0_GPIOS_PIN, GPIO_OUTPUT_ACTIVE | DT_ALIAS_LED0_GPIOS_FLAGS);
@@ -111,10 +119,6 @@ void main(void)
 	rcl_node_t node = rcl_get_zero_initialized_node();
 	RCCHECK(rcl_node_init(&node, "int32_publisher_rcl", "", &context, &node_ops))
 
-	// rcl_publisher_options_t publisher_measure_ops = rcl_publisher_get_default_options();
-	// rcl_publisher_t publisher_measure = rcl_get_zero_initialized_publisher();
-	// RCCHECK(rcl_publisher_init(&publisher_measure, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/tof/measure2", &publisher_measure_ops))
-
 	rcl_subscription_options_t subscription_trigger_ops = rcl_subscription_get_default_options();
 	rcl_subscription_t subscription_trigger = rcl_get_zero_initialized_subscription();
 	RCCHECK(rcl_subscription_init(&subscription_trigger, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/tof/trigger", &subscription_trigger_ops))
@@ -134,6 +138,11 @@ void main(void)
 	uint32_t measure;
 
 	while (1) {
+		s64_t time_stamp;
+		s64_t milliseconds_spent;
+
+		time_stamp = k_uptime_get();
+
 		sensor_sample_fetch(tof);
 		sensor_channel_get(tof, SENSOR_CHAN_DISTANCE, &value);
 		measure = value.val1;
@@ -145,7 +154,7 @@ void main(void)
 
 		size_t index_measure_ext;
 		RCSOFTCHECK(rcl_wait_set_add_subscription(&wait_set, &subscription_measure, &index_measure_ext))
-
+		
 		RCSOFTCHECK(rcl_wait(&wait_set, RCL_MS_TO_NS(10)))
 
 		if (wait_set.subscriptions[index_subscription_trigger]) {
@@ -155,12 +164,10 @@ void main(void)
 			gpio_pin_set(led, DT_ALIAS_LED0_GPIOS_PIN, (int)(msg.data) ? 1 : 0);
 
 			if(trigger){
-				k_sem_take(&updating_sem, K_FOREVER);
 				struct led_rgb c = RGB(0x0f, 0x00, 0x00);
 				for(size_t j = 0 ; j < STRIP_NUM_PIXELS ; j++){
 					memcpy(&pixels[j], &c, sizeof(struct led_rgb));
 				}
-				k_sem_give(&updating_sem);
 			}
 		}
 
@@ -175,14 +182,17 @@ void main(void)
 				int nval = (int)val;
 
 				struct led_rgb c = RGB(0x00, 0x0f, 0x00);
-				k_sem_take(&updating_sem, K_FOREVER);
 				memset(&pixels, 0x00, sizeof(pixels));
 				for(size_t j = 0 ; j < STRIP_NUM_PIXELS-nval ; j++){
-					memcpy(&pixels[j], &colors[1], sizeof(struct led_rgb));
+					memcpy(&pixels[j], &c, sizeof(struct led_rgb));
 				}
-				k_sem_give(&updating_sem);
 			}
 		}
+
+		led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
+
+		milliseconds_spent = k_uptime_delta(&time_stamp);
+		// k_sleep(150-milliseconds_spent);
 
 		// printf("Measure is %d mm   Measure external is %d mm\n", measure, measure_ext);
 		

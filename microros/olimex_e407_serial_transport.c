@@ -134,6 +134,23 @@ size_t uxr_write_serial_data_platform(uxrSerialPlatform* platform, uint8_t* buf,
 
 size_t uxr_read_serial_data_platform(uxrSerialPlatform* platform, uint8_t* buf, size_t len, int timeout, uint8_t* errcode)
 { 
+	// int acc_timeout = 0;
+	// size_t read;
+
+	// uart_irq_rx_disable(platform->uart_dev);
+	// read = ring_buf_get(&in_ringbuf, buf, len);
+	// uart_irq_rx_enable(platform->uart_dev);
+
+	// if(read < len){
+	// 	k_sleep(K_MSEC(timeout));
+
+	// 	uart_irq_rx_disable(platform->uart_dev);
+	// 	read += ring_buf_get(&in_ringbuf, &buf[read], len-read);
+	// 	uart_irq_rx_enable(platform->uart_dev);
+	// }
+
+	// return read;
+
   k_sleep(K_MSEC(timeout));
 
   uart_irq_rx_disable(platform->uart_dev);
