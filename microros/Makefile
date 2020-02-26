@@ -15,32 +15,13 @@ else
 	BUILD_TYPE = Release
 endif
 
-$(warning PREFIX is $(PREFIX))
-$(warning CC is $(CC))
-$(warning AR is $(AR))
-$(warning CFLAGS is $(CFLAGS))
-$(warning INCLUDES is $(INCLUDES))
-$(warning EXTENSIONS_DIR is $(EXTENSIONS_DIR))
-
-# COLCON_INCLUDES_STR := -I$(FW_DIR)/zephyrproject/zephyr/include/posix 
-# COLCON_INCLUDES_STR += $(foreach x,$(INCLUDES),$(x)\n)
-
 CFLAGS_INTERNAL := $(CFLAGS)
 CXXFLAGS_INTERNAL := $(CXXFLAGS)
 
 CFLAGS_INTERNAL += -I$(FW_DIR)/zephyrproject/zephyr/include/posix
 CXXFLAGS_INTERNAL += -I$(FW_DIR)/zephyrproject/zephyr/include/posix
 
-# CXXFLAGS_INTERNAL += -isystem$(FW_DIR)/zephyr-sdk-0.11.1/arm-zephyr-eabi/arm-zephyr-eabi/include/c++/9.2.0
-# CXXFLAGS_INTERNAL += -isystem$(FW_DIR)/zephyr-sdk-0.11.1/arm-zephyr-eabi/arm-zephyr-eabi/include/c++/9.2.0/arm-zephyr-eabi/thumb/v7e-m+fp/hard
-# CXXFLAGS_INTERNAL += -isystem$(FW_DIR)/zephyr-sdk-0.11.1/arm-zephyr-eabi/arm-zephyr-eabi/include
-
 all: libmicroros
-
-# all: colcon_compile
-# 	mkdir -p $(OBJ_DIR) $(LIB_DIR)
-# 	$(CC) -c $(CFLAGS) -MD -Iinclude src/mylib.c -o $(OBJ_DIR)/mylib.o
-# 	$(AR) -rcs $(LIB_DIR)/libmylib.a $(OBJ_DIR)/mylib.o
 
 clean:
 	rm -rf $(OBJ_DIR) $(LIB_DIR)
