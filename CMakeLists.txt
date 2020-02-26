@@ -22,9 +22,6 @@ zephyr_get_system_include_directories_for_lang_as_string(CXX system_includes_cxx
 zephyr_get_compile_definitions_for_lang_as_string(       CXX definitions_cxx)
 zephyr_get_compile_options_for_lang_as_string(           CXX options_cxx)
 
-# message(WARNING ${system_includes})
-# message(FATAL_ERROR ${system_includes_cxx})
-
 set(external_project_cflags
     "${includes} ${definitions} ${options} ${system_includes}"
     )
@@ -45,7 +42,7 @@ set(submake "make")
 endif()
 
 ExternalProject_Add(
-    mylib_project                 # Name for custom target
+    microroslib_project                 # Name for custom target
     PREFIX     ${mylib_build_dir} # Root dir for entire project
     SOURCE_DIR ${mylib_src_dir}
     BINARY_DIR ${mylib_src_dir} # This particular build system is invoked from the root
@@ -60,25 +57,25 @@ ExternalProject_Add(
             CXXFLAGS=${external_project_cxxflags}
 
     INSTALL_COMMAND ""      # This particular build system has no install command
-    BUILD_BYPRODUCTS ${MYLIB_LIB_DIR}/libmicroros.a
+    BUILD_BYPRODUCTS ${MICROROS_LIB_DIR}/libmicroros.a
     )
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../mcu_ws/install)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../mcu_ws/install/include)
 
-set(MYLIB_LIB_DIR     ${CMAKE_CURRENT_SOURCE_DIR}/../mcu_ws/install)
-set(MYLIB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../mcu_ws/install/include)
+set(MICROROS_LIB_DIR     ${CMAKE_CURRENT_SOURCE_DIR}/../mcu_ws/install)
+set(MICROROS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../mcu_ws/install/include)
 
-add_library(mylib_lib STATIC IMPORTED GLOBAL)
+add_library(microroslib STATIC IMPORTED GLOBAL)
 add_dependencies(
-    mylib_lib
-    mylib_project
+    microroslib
+    microroslib_project
     )
 
-add_dependencies(mylib_project offsets_h)
+add_dependencies(microroslib_project offsets_h)
 
-set_target_properties(mylib_lib PROPERTIES IMPORTED_LOCATION             ${MYLIB_LIB_DIR}/libmicroros.a)
-set_target_properties(mylib_lib PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${MYLIB_INCLUDE_DIR})
+set_target_properties(microroslib PROPERTIES IMPORTED_LOCATION             ${MICROROS_LIB_DIR}/libmicroros.a)
+set_target_properties(microroslib PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${MICROROS_INCLUDE_DIR})
 
 
-target_link_libraries(app PUBLIC mylib_lib)
+target_link_libraries(app PUBLIC microroslib)
