@@ -1,4 +1,4 @@
-#include "olimex_e407_serial_transport.h"
+#include "zephyr_usb_serial_transport.h"
 
 #include <unistd.h>
 #include <stdio.h>
