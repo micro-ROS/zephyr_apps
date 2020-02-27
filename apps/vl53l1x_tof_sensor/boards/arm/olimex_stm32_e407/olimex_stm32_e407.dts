@@ -1,0 +1,81 @@
+/*
+ * Copyright (c) 2017, Erwin Rol <erwin@erwinrol.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <st/f4/stm32f407Xg.dtsi>
+
+/ {
+	model = "Olimex STM32-E407 board";
+	compatible = "olimex,stm32-e407", "st,stm32f407";
+
+	chosen {
+		zephyr,console = &usart1;
+		zephyr,shell-uart = &usart1;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,ccm = &ccm0;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		green_led_1: led_1 {
+			gpios = <&gpioc 13 GPIO_INT_ACTIVE_HIGH>;
+			label = "LED1";
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		user_button: button {
+			label = "Key";
+			gpios = <&gpioa 0 GPIO_INT_ACTIVE_LOW>;
+		};
+	};
+
+	aliases {
+		led0 = &green_led_1;
+		sw0 = &user_button;
+	};
+};
+
+&usart1 {
+	current-speed = <115200>;
+	status = "okay";
+};
+
+&usart3 {
+	current-speed = <115200>;
+	status = "okay";
+};
+
+&usart6 {
+	current-speed = <115200>;
+	status = "okay";
+};
+
+&i2c1 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_FAST>;
+
+	vl53l1x@29 {
+		compatible = "st,vl53l1x";
+		reg = <0x29>;
+		label = "VL53L1X";
+	};
+};
+
+&rtc {
+	status = "okay";
+};
+
+/* Only one interface should be enabled at a time: usbotg_fs or usbotg_hs */
+usb_otg1: &usbotg_fs {
+	status = "disabled";
+};
+
+usb_otg2: &usbotg_hs {
+	status = "okay";
+};
