@@ -59,6 +59,7 @@ ExternalProject_Add(
             CFLAGS=${external_project_cflags}
             CXX=${CMAKE_CXX_COMPILER}
             CXXFLAGS=${external_project_cxxflags}
+            APP_META=$ENV{UROS_APP_FOLDER}/app-colcon.meta
 
     INSTALL_COMMAND ""      # This particular build system has no install command
     BUILD_BYPRODUCTS ${MICROROS_LIB_DIR}/libmicroros.a

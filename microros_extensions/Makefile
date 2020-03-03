@@ -41,6 +41,7 @@ colcon_compile: arm_toolchain
 	colcon build \
 		--merge-install \
 		--packages-ignore-regex=.*_cpp \
+		--metas $(UROS_DIR)/colcon.meta $(APP_META) \
 		--cmake-args \
 		-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=OFF \
 		-DTHIRDPARTY=ON \
