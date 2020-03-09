@@ -92,7 +92,7 @@ void main(void)
 		sensor_sample_fetch(tof_sensor);
 		sensor_channel_get(tof_sensor, SENSOR_CHAN_DISTANCE, &tof_value);
 		tof_data.data = sensor_value_to_double(&tof_value);
-		printf("TOF sensor: %.3fm\n", tof_data.data);
+		printf("TOF sensor: %.3f m \t", tof_data.data);
 
 		rcl_publish(&tof_publisher, (const void*)&tof_data, NULL);
 
