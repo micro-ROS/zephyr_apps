@@ -12,7 +12,8 @@
 #include <rcl/rcl.h>
 #include <rcl_action/rcl_action.h>
 #include <rcl/error_handling.h>
-#include <std_msgs/msg/int32.h>
+#include <std_msgs/msg/float32.h>
+#include <geometry_msgs/msg/point32.h>
 #include <std_msgs/msg/bool.h>
 
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc);}}
@@ -23,160 +24,106 @@ static inline float out_ev(struct sensor_value *val)
 	return (val->val1 + (float)val->val2 / 1000000);
 }
 
-static int print_samples;
-static int lsm6dsl_trig_cnt;
-
-static struct sensor_value accel_x_out, accel_y_out, accel_z_out;
-static struct sensor_value gyro_x_out, gyro_y_out, gyro_z_out;
-#if defined(CONFIG_LSM6DSL_EXT0_LIS2MDL)
-static struct sensor_value magn_x_out, magn_y_out, magn_z_out;
-#endif
-#if defined(CONFIG_LSM6DSL_EXT0_LPS22HB)
-static struct sensor_value press_out, temp_out;
-#endif
-
-#ifdef CONFIG_LSM6DSL_TRIGGER
-static void lsm6dsl_trigger_handler(struct device *dev,
-				    struct sensor_trigger *trig)
-{
-	static struct sensor_value accel_x, accel_y, accel_z;
-	static struct sensor_value gyro_x, gyro_y, gyro_z;
-#if defined(CONFIG_LSM6DSL_EXT0_LIS2MDL)
-	static struct sensor_value magn_x, magn_y, magn_z;
-#endif
-#if defined(CONFIG_LSM6DSL_EXT0_LPS22HB)
-	static struct sensor_value press, temp;
-#endif
-	lsm6dsl_trig_cnt++;
-
-	sensor_sample_fetch_chan(dev, SENSOR_CHAN_ACCEL_XYZ);
-	sensor_channel_get(dev, SENSOR_CHAN_ACCEL_X, &accel_x);
-	sensor_channel_get(dev, SENSOR_CHAN_ACCEL_Y, &accel_y);
-	sensor_channel_get(dev, SENSOR_CHAN_ACCEL_Z, &accel_z);
-
-	/* lsm6dsl gyro */
-	sensor_sample_fetch_chan(dev, SENSOR_CHAN_GYRO_XYZ);
-	sensor_channel_get(dev, SENSOR_CHAN_GYRO_X, &gyro_x);
-	sensor_channel_get(dev, SENSOR_CHAN_GYRO_Y, &gyro_y);
-	sensor_channel_get(dev, SENSOR_CHAN_GYRO_Z, &gyro_z);
-
-#if defined(CONFIG_LSM6DSL_EXT0_LIS2MDL)
-	/* lsm6dsl external magn */
-	sensor_sample_fetch_chan(dev, SENSOR_CHAN_MAGN_XYZ);
-	sensor_channel_get(dev, SENSOR_CHAN_MAGN_X, &magn_x);
-	sensor_channel_get(dev, SENSOR_CHAN_MAGN_Y, &magn_y);
-	sensor_channel_get(dev, SENSOR_CHAN_MAGN_Z, &magn_z);
-#endif
-
-#if defined(CONFIG_LSM6DSL_EXT0_LPS22HB)
-	/* lsm6dsl external press/temp */
-	sensor_sample_fetch_chan(dev, SENSOR_CHAN_PRESS);
-	sensor_channel_get(dev, SENSOR_CHAN_PRESS, &press);
-
-	sensor_sample_fetch_chan(dev, SENSOR_CHAN_AMBIENT_TEMP);
-	sensor_channel_get(dev, SENSOR_CHAN_AMBIENT_TEMP, &temp);
-#endif
-
-	if (print_samples) {
-		print_samples = 0;
-
-		accel_x_out = accel_x;
-		accel_y_out = accel_y;
-		accel_z_out = accel_z;
-
-		gyro_x_out = gyro_x;
-		gyro_y_out = gyro_y;
-		gyro_z_out = gyro_z;
-
-#if defined(CONFIG_LSM6DSL_EXT0_LIS2MDL)
-		magn_x_out = magn_x;
-		magn_y_out = magn_y;
-		magn_z_out = magn_z;
-#endif
-
-#if defined(CONFIG_LSM6DSL_EXT0_LPS22HB)
-		press_out = press;
-		temp_out = temp;
-#endif
-	}
-
-}
-#endif
-
 void main(void)
 {	
-	// Sensors init
+	// ---- Sensor configuration ----
+	struct device *led = device_get_binding(DT_ALIAS_LED0_GPIOS_CONTROLLER);
+	gpio_pin_configure(led, DT_ALIAS_LED0_GPIOS_PIN, GPIO_OUTPUT_ACTIVE | DT_ALIAS_LED0_GPIOS_FLAGS);
+
 	struct device *tof_sensor = device_get_binding(DT_INST_0_ST_VL53L0X_LABEL);
 	struct sensor_value tof_value;
 
 	struct device *imu_sensor = device_get_binding(DT_INST_0_ST_LSM6DSL_LABEL);
 	struct sensor_value imu_value;
+	struct sensor_value accel_x, accel_y, accel_z;
 
-	/* set accel/gyro sampling frequency to 104 Hz */
+	// set accel/gyro sampling frequency to 104 Hz
 	imu_value.val1 = 104;
 	imu_value.val2 = 0;
 
 	sensor_attr_set(imu_sensor, SENSOR_CHAN_ACCEL_XYZ, SENSOR_ATTR_SAMPLING_FREQUENCY, &imu_value);
 	sensor_attr_set(imu_sensor, SENSOR_CHAN_GYRO_XYZ, SENSOR_ATTR_SAMPLING_FREQUENCY, &imu_value);
 
-#ifdef CONFIG_LSM6DSL_TRIGGER
-	struct sensor_trigger trig;
 
-	trig.type = SENSOR_TRIG_DATA_READY;
-	trig.chan = SENSOR_CHAN_ACCEL_XYZ;
 
-	sensor_trigger_set(imu_sensor, &trig, lsm6dsl_trigger_handler);
-#endif
-
-	// micro-ROS init
+	// ---- micro-ROS configuration ----
 
 	rcl_init_options_t options = rcl_get_zero_initialized_init_options();
-
 	RCCHECK(rcl_init_options_init(&options, rcl_get_default_allocator()))
 
-	// Optional RMW configuration 
 	rmw_init_options_t* rmw_options = rcl_init_options_get_rmw_init_options(&options);
 	RCCHECK(rmw_uros_options_set_client_key(0xDEADBEEF, rmw_options))
 
 	rcl_context_t context = rcl_get_zero_initialized_context();
 	RCCHECK(rcl_init(0, NULL, &options, &context))
 
+	// Creating node
 	rcl_node_options_t node_ops = rcl_node_get_default_options();
-
 	rcl_node_t node = rcl_get_zero_initialized_node();
-	RCCHECK(rcl_node_init(&node, "zephyr_int32_publisher", "", &context, &node_ops))
+	RCCHECK(rcl_node_init(&node, "zephyr_sensors_node", "", &context, &node_ops))
 
-	rcl_publisher_options_t publisher_ops = rcl_publisher_get_default_options();
-	rcl_publisher_t publisher = rcl_get_zero_initialized_publisher();
-	RCCHECK(rcl_publisher_init(&publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "zephyr_int32_publisher", &publisher_ops))
+	// Creating TOF publisher
+	rcl_publisher_options_t tof_publisher_ops = rcl_publisher_get_default_options();
+	rcl_publisher_t tof_publisher = rcl_get_zero_initialized_publisher();
+	RCCHECK(rcl_publisher_init(&tof_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/sensors/tof", &tof_publisher_ops))
 
-	std_msgs__msg__Int32 msg;
-	msg.data = 0;
-	
-	rcl_ret_t rc;
+	// Creating IMU publisher
+	rcl_publisher_options_t imu_publisher_ops = rcl_publisher_get_default_options();
+	rcl_publisher_t imu_publisher = rcl_get_zero_initialized_publisher();
+	RCCHECK(rcl_publisher_init(&imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Point32), "/sensors/imu", &imu_publisher_ops))
+
+	// Creating LED subscriner
+	rcl_subscription_options_t led_subscription_ops = rcl_subscription_get_default_options();
+	rcl_subscription_t led_subscription = rcl_get_zero_initialized_subscription();
+	RCCHECK(rcl_subscription_init(&led_subscription, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/sensors/led", &led_subscription_ops))
+
+	// Creating a wait set
+	rcl_wait_set_t wait_set = rcl_get_zero_initialized_wait_set();
+  	RCCHECK(rcl_wait_set_init(&wait_set, 1, 0, 0, 0, 0, 0, &context, rcl_get_default_allocator()))
+
+	// ---- Main loop ----
+	std_msgs__msg__Float32 tof_data;
+	geometry_msgs__msg__Point32 imu_data;
+	gpio_pin_set(led, DT_ALIAS_LED0_GPIOS_PIN, 0);
+
 	do {
 
+		// Publish TOF
 		sensor_sample_fetch(tof_sensor);
 		sensor_channel_get(tof_sensor, SENSOR_CHAN_DISTANCE, &tof_value);
-		printf("TOF sensor: %.3fm\n", sensor_value_to_double(&tof_value));
+		tof_data.data = sensor_value_to_double(&tof_value);
+		printf("TOF sensor: %.3fm\n", tof_data.data);
 
-			struct device *imu_sensor = device_get_binding(DT_INST_0_ST_LSM6DSL_LABEL);
-	struct sensor_value imu_value;
+		rcl_publish(&tof_publisher, (const void*)&tof_data, NULL);
 
-		if(print_samples == 0){
-			printk("accel x:%f ms/2 y:%f ms/2 z:%f ms/2 \n",
-							  out_ev(&accel_x_out),
-							  out_ev(&accel_y_out),
-							  out_ev(&accel_z_out));
-			
-			print_samples = 1;
+		// PUblish IMU
+		sensor_sample_fetch_chan(imu_sensor, SENSOR_CHAN_ACCEL_XYZ);
+		sensor_channel_get(imu_sensor, SENSOR_CHAN_ACCEL_X, &accel_x);
+		sensor_channel_get(imu_sensor, SENSOR_CHAN_ACCEL_Y, &accel_y);
+		sensor_channel_get(imu_sensor, SENSOR_CHAN_ACCEL_Z, &accel_z);
+		imu_data.x = out_ev(&accel_x);
+		imu_data.y = out_ev(&accel_y);
+		imu_data.z = out_ev(&accel_z);
+		printf("IMU: [%.2f, %.2f, %.2f] m/s^2\n",  imu_data.x, imu_data.y, imu_data.z);
+	
+		rcl_publish(&imu_publisher, (const void*)&imu_data, NULL);
+
+		// Prepare the wait set and receive the subscription
+		RCSOFTCHECK(rcl_wait_set_clear(&wait_set))
+    
+		size_t index_subscription_led;
+		RCSOFTCHECK(rcl_wait_set_add_subscription(&wait_set, &led_subscription, &index_subscription_led))
+		RCSOFTCHECK(rcl_wait(&wait_set, RCL_MS_TO_NS(50)))
+
+		if (wait_set.subscriptions[index_subscription_led]) {
+			std_msgs__msg__Bool msg;
+			rcl_take(wait_set.subscriptions[index_subscription_led], &msg, NULL, NULL);
+
+			gpio_pin_set(led, DT_ALIAS_LED0_GPIOS_PIN, (int)(msg.data) ? 1 : 0);
 		}
 
-		rc = rcl_publish(&publisher, (const void*)&msg, NULL);
-		msg.data++;
-		k_sleep(1000);
+		k_sleep(10);
 	} while (true);
 
-	RCCHECK(rcl_publisher_fini(&publisher, &node))
 	RCCHECK(rcl_node_fini(&node))
 }
