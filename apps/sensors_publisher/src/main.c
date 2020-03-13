@@ -85,12 +85,12 @@ void main(void)
 	rcl_publisher_options_t publisher_trigger_ops = rcl_publisher_get_default_options();
 	publisher_trigger_ops.qos.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
 	rcl_publisher_t publisher_trigger = rcl_get_zero_initialized_publisher();
-	RCCHECK(rcl_publisher_init(&publisher_trigger, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/tof/trigger", &publisher_trigger_ops))
+	RCCHECK(rcl_publisher_init(&publisher_trigger, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/sensors/tof/trigger", &publisher_trigger_ops))
 
 	// Creating a thresold subscriber
 	rcl_subscription_options_t subscription_thr_ops = rcl_subscription_get_default_options();
 	rcl_subscription_t subscription_thr = rcl_get_zero_initialized_subscription();
-	RCCHECK(rcl_subscription_init(&subscription_thr, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/tof/threshold", &subscription_thr_ops))
+	RCCHECK(rcl_subscription_init(&subscription_thr, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/sensors/tof/threshold", &subscription_thr_ops))
 
 
 	// Creating a wait set

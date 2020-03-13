@@ -79,11 +79,11 @@ void main(void)
 
 	rcl_subscription_options_t subscription_trigger_ops = rcl_subscription_get_default_options();
 	rcl_subscription_t subscription_trigger = rcl_get_zero_initialized_subscription();
-	RCCHECK(rcl_subscription_init(&subscription_trigger, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/tof/trigger", &subscription_trigger_ops))
+	RCCHECK(rcl_subscription_init(&subscription_trigger, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/sensors/tof/trigger", &subscription_trigger_ops))
 
 	rcl_subscription_options_t subscription_measure_ops = rcl_subscription_get_default_options();
 	rcl_subscription_t subscription_measure = rcl_get_zero_initialized_subscription();
-	RCCHECK(rcl_subscription_init(&subscription_measure, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/tof/measure", &subscription_measure_ops))
+	RCCHECK(rcl_subscription_init(&subscription_measure, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/sensors/tof", &subscription_measure_ops))
 
 
 	rcl_wait_set_t wait_set = rcl_get_zero_initialized_wait_set();
