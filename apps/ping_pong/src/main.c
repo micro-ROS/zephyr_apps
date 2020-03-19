@@ -8,7 +8,8 @@
 
 #include <stdio.h>
 #include <unistd.h>
-// #include <pthread.h>
+
+#include <zephyr.h>
 
 #define STRING_BUFFER_LEN 100
 
@@ -74,8 +75,7 @@ void main(void)
   struct timespec ts;
   rcl_ret_t rc;
 
-  s64_t time_stamp;
-  time_stamp = k_uptime_get();
+  uint32_t iterations = 0;
 
   do {
     // Clear and set the waitset
@@ -91,7 +91,7 @@ void main(void)
     rcl_wait(&wait_set, RCL_MS_TO_NS(100));
 
     // Check if it is time to send a ping
-    if (k_uptime_delta(&time_stamp) > 5000) {
+    if (iterations++ % 50 == 0) {
       // Generate a new random sequence number
       seq_no = rand();
       sprintf(msg.frame_id.data, "%d_%d", seq_no, device_id);
@@ -105,10 +105,7 @@ void main(void)
       // Reset the pong count and publish the ping message
       pong_count = 0;
       rcl_publish(&ping_publisher, (const void*)&msg, NULL);
-      // printf("Ping send seq 0x%x\n", seq_no);
-
-	  // Set the timestamp
-	  time_stamp = k_uptime_get();   
+      printf("Ping send seq %s\n", msg.frame_id.data);  
     }
     
     // Check if some pong message is received
@@ -117,7 +114,7 @@ void main(void)
 
       if(rc == RCL_RET_OK && strcmp(msg.frame_id.data,rcv_msg.frame_id.data) == 0) {
           pong_count++;
-          // printf("Pong for seq 0x%x (%d)\n", seq_no, pong_count);
+          printf("Pong for seq %s (%d)\n", rcv_msg.frame_id.data, pong_count);
       }
     }
 
@@ -127,7 +124,7 @@ void main(void)
 
       // Dont pong my own pings
       if(rc == RCL_RET_OK && strcmp(msg.frame_id.data,rcv_msg.frame_id.data) != 0){
-        // printf("Ping received with seq 0x%x (%d). Answering.\n", seq_no);
+        printf("Ping received with seq %s. Answering.\n", rcv_msg.frame_id.data);
         rcl_publish(&pong_publisher, (const void*)&rcv_msg, NULL);
       }
     }
