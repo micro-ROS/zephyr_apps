@@ -18,8 +18,15 @@ endif
 CFLAGS_INTERNAL := $(CFLAGS)
 CXXFLAGS_INTERNAL := $(CXXFLAGS)
 
-CFLAGS_INTERNAL += -I$(FW_DIR)/zephyrproject/zephyr/include/posix
-CXXFLAGS_INTERNAL += -I$(FW_DIR)/zephyrproject/zephyr/include/posix
+ifeq ($(BOARD),native_posix)
+	TOOLCHAIN = $(EXTENSIONS_DIR)/host_toolchain.cmake
+	OBJECT_EXTENSION = o
+else
+	TOOLCHAIN = $(EXTENSIONS_DIR)/arm_toolchain.cmake
+	OBJECT_EXTENSION = obj
+	CFLAGS_INTERNAL += -I$(FW_DIR)/zephyrproject/zephyr/include/posix
+	CXXFLAGS_INTERNAL += -I$(FW_DIR)/zephyrproject/zephyr/include/posix
+endif
 
 all: libmicroros
 
@@ -36,7 +43,17 @@ arm_toolchain: $(EXTENSIONS_DIR)/arm_toolchain.cmake.in
 		sed "s/@CXXFLAGS@/$(subst /,\/,$(CXXFLAGS_INTERNAL))/g" \
 		> $(EXTENSIONS_DIR)/arm_toolchain.cmake
 
-colcon_compile: arm_toolchain
+host_toolchain: $(EXTENSIONS_DIR)/host_toolchain.cmake.in
+	rm -f $(EXTENSIONS_DIR)/host_toolchain.cmake; \
+	cat $(EXTENSIONS_DIR)/host_toolchain.cmake.in | \
+		sed "s/@CMAKE_C_COMPILER@/$(subst /,\/,$(CC))/g" | \
+		sed "s/@CMAKE_CXX_COMPILER@/$(subst /,\/,$(CXX))/g" | \
+		sed "s/@CMAKE_SYSROOT@/$(subst /,\/,$(FW_DIR))/g" | \
+		sed "s/@CFLAGS@/$(subst /,\/,$(CFLAGS_INTERNAL))/g" | \
+		sed "s/@CXXFLAGS@/$(subst /,\/,$(CXXFLAGS_INTERNAL))/g" \
+		> $(EXTENSIONS_DIR)/host_toolchain.cmake
+
+colcon_compile: arm_toolchain host_toolchain
 	cd $(UROS_DIR); \
 	colcon build \
 		--merge-install \
@@ -48,7 +65,7 @@ colcon_compile: arm_toolchain
 		-DBUILD_SHARED_LIBS=OFF \
 		-DBUILD_TESTING=OFF \
 		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
-		-DCMAKE_TOOLCHAIN_FILE=$(EXTENSIONS_DIR)/arm_toolchain.cmake \
+		-DCMAKE_TOOLCHAIN_FILE=$(TOOLCHAIN) \
 		-DCMAKE_VERBOSE_MAKEFILE=ON; \
 
 libmicroros: colcon_compile
@@ -61,5 +78,5 @@ libmicroros: colcon_compile
 		done; \
 		cd ..; rm -rf $$folder; \
 	done ; \
-	$(AR) rc libmicroros.a *.obj; cp libmicroros.a ../install/; ranlib ../install/libmicroros.a; \
+	$(AR) rc libmicroros.a *.$(OBJECT_EXTENSION); cp libmicroros.a ../install/; ranlib ../install/libmicroros.a; \
 	cd ..; rm -rf libmicroros;
