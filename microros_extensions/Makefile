@@ -70,7 +70,7 @@ colcon_compile: arm_toolchain host_toolchain
 
 libmicroros: colcon_compile
 	mkdir -p $(UROS_DIR)/libmicroros; cd $(UROS_DIR)/libmicroros; \
-	for file in $$(find $(UROS_DIR)/install/ -name '*.a'); do \
+	for file in $$(find $(UROS_DIR)/install/lib/ -name '*.a'); do \
 		folder=$$(echo $$file | sed -E "s/(.+)\/(.+).a/\2/"); \
 		mkdir -p $$folder; cd $$folder; $(AR) x $$file; \
 		for f in *; do \
