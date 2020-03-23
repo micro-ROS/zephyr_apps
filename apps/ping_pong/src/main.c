@@ -42,6 +42,7 @@ void main(void)
 
   // Create a reliable pong subscriber
   rcl_subscription_options_t pong_subscription_ops = rcl_subscription_get_default_options();
+  pong_subscription_ops.qos.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
   rcl_subscription_t pong_subscription = rcl_get_zero_initialized_subscription();
   rcl_subscription_init(&pong_subscription, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Header), "/microROS/pong", &pong_subscription_ops);
 
