@@ -17,7 +17,7 @@
 #include <std_msgs/msg/bool.h>
 #include <std_msgs/msg/int32.h>
 
-#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc);}}
+#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc); k_sleep(-1);}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
 
 static inline float out_ev(struct sensor_value *val)
@@ -45,8 +45,6 @@ void main(void)
 	sensor_attr_set(imu_sensor, SENSOR_CHAN_ACCEL_XYZ, SENSOR_ATTR_SAMPLING_FREQUENCY, &imu_value);
 	sensor_attr_set(imu_sensor, SENSOR_CHAN_GYRO_XYZ, SENSOR_ATTR_SAMPLING_FREQUENCY, &imu_value);
 
-
-
 	// ---- micro-ROS configuration ----
 
 	rcl_init_options_t options = rcl_get_zero_initialized_init_options();
@@ -65,23 +63,21 @@ void main(void)
 
 	// Creating TOF publisher
 	rcl_publisher_options_t tof_publisher_ops = rcl_publisher_get_default_options();
-	tof_publisher_ops.qos.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
 	rcl_publisher_t tof_publisher = rcl_get_zero_initialized_publisher();
 	RCCHECK(rcl_publisher_init(&tof_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/sensors/tof", &tof_publisher_ops))
 
 	// Creating IMU publisher
 	rcl_publisher_options_t imu_publisher_ops = rcl_publisher_get_default_options();
-	imu_publisher_ops.qos.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
 	rcl_publisher_t imu_publisher = rcl_get_zero_initialized_publisher();
 	RCCHECK(rcl_publisher_init(&imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Point32), "/sensors/imu", &imu_publisher_ops))
 
-	// Creating LED subscriner
+	// Creating LED subscriber
 	rcl_subscription_options_t led_subscription_ops = rcl_subscription_get_default_options();
 	led_subscription_ops.qos.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
 	rcl_subscription_t led_subscription = rcl_get_zero_initialized_subscription();
 	RCCHECK(rcl_subscription_init(&led_subscription, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/sensors/led", &led_subscription_ops))
 
-	// Creating a trigger publiser
+	// Creating a trigger publisher
 	rcl_publisher_options_t publisher_trigger_ops = rcl_publisher_get_default_options();
 	publisher_trigger_ops.qos.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
 	rcl_publisher_t publisher_trigger = rcl_get_zero_initialized_publisher();
