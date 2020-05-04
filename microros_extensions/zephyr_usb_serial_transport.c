@@ -20,33 +20,33 @@ u8_t uart_out_buffer[RING_BUF_SIZE];
 struct ring_buf out_ringbuf, in_ringbuf;
 
 static void uart_fifo_callback(struct device *dev){ 
-		while (uart_irq_update(dev) && uart_irq_is_pending(dev)) {
-			if (uart_irq_rx_ready(dev)) {
-				int recv_len;
-				u8_t buffer[64];
-				size_t len = MIN(ring_buf_space_get(&in_ringbuf), sizeof(buffer));
+	while (uart_irq_update(dev) && uart_irq_is_pending(dev)) {
+		if (uart_irq_rx_ready(dev)) {
+			int recv_len;
+			u8_t buffer[64];
+			size_t len = MIN(ring_buf_space_get(&in_ringbuf), sizeof(buffer));
 
-				if (len > 0){
-					recv_len = uart_fifo_read(dev, buffer, len);
-					ring_buf_put(&in_ringbuf, buffer, recv_len);
-				}
-
+			if (len > 0){
+				recv_len = uart_fifo_read(dev, buffer, len);
+				ring_buf_put(&in_ringbuf, buffer, recv_len);
 			}
 
-			if (uart_irq_tx_ready(dev)) {			
-				u8_t buffer[64];
-				int rb_len;
-
-				rb_len = ring_buf_get(&out_ringbuf, buffer, sizeof(buffer));
-
-				if (rb_len == 0) {
-					uart_irq_tx_disable(dev);
-					continue;
-				}
-
-				uart_fifo_fill(dev, buffer, rb_len);
-			}
 		}
+
+		if (uart_irq_tx_ready(dev)) {			
+			u8_t buffer[64];
+			int rb_len;
+
+			rb_len = ring_buf_get(&out_ringbuf, buffer, sizeof(buffer));
+
+			if (rb_len == 0) {
+				uart_irq_tx_disable(dev);
+				continue;
+			}
+
+			uart_fifo_fill(dev, buffer, rb_len);
+		}
+	}
 }
 
 
@@ -129,7 +129,6 @@ size_t uxr_write_serial_data_platform(uxrSerialPlatform* platform, uint8_t* buf,
 }
 
 size_t uxr_read_serial_data_platform(uxrSerialPlatform* platform, uint8_t* buf, size_t len, int timeout, uint8_t* errcode){ 
-
 	size_t read = 0;
 	int spent_time = 0;
 
