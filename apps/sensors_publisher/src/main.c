@@ -63,13 +63,11 @@ void main(void)
 
 	// Creating TOF publisher
 	rcl_publisher_options_t tof_publisher_ops = rcl_publisher_get_default_options();
-	// tof_publisher_ops.qos.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
 	rcl_publisher_t tof_publisher = rcl_get_zero_initialized_publisher();
 	RCCHECK(rcl_publisher_init(&tof_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/sensors/tof", &tof_publisher_ops))
 
 	// Creating IMU publisher
 	rcl_publisher_options_t imu_publisher_ops = rcl_publisher_get_default_options();
-	// imu_publisher_ops.qos.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
 	rcl_publisher_t imu_publisher = rcl_get_zero_initialized_publisher();
 	RCCHECK(rcl_publisher_init(&imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Point32), "/sensors/imu", &imu_publisher_ops))
 
