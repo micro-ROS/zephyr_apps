@@ -19,7 +19,9 @@ u8_t uart_out_buffer[RING_BUF_SIZE];
 
 bool uxr_init_serial_platform(struct uxrSerialPlatform* platform, int fd, uint8_t remote_addr, uint8_t local_addr){  
 
-    platform->uart_dev = device_get_binding("UART_2");
+    char uart_descriptor[8]; 
+    sprintf(uart_descriptor,"UART_%d", fd);
+    platform->uart_dev = device_get_binding(uart_descriptor);
     if (!platform->uart_dev) {
         printk("Serial device not found\n");
         return false;
