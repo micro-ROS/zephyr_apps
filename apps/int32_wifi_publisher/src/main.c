@@ -63,7 +63,6 @@ void main(void)
 	}
 	printf("Connection OK\n");
 	
-		sleep(1);
 	// micro-ROS
 	rcl_init_options_t options = rcl_get_zero_initialized_init_options();
 
