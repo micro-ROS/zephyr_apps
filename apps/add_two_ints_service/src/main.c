@@ -54,8 +54,6 @@ void main(void)
 			example_interfaces__srv__AddTwoInts_Request__init(&req);
 			RCSOFTCHECK(rcl_take_request(&serv,&req_id,&req))
 
-			//printf("Service request value: %d + %d. Seq %d\n", (int)req.a, (int)req.b, (int) req_id.sequence_number);
-
 			example_interfaces__srv__AddTwoInts_Response res;
 			example_interfaces__srv__AddTwoInts_Response__init(&res);
 
