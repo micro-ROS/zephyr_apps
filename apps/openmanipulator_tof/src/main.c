@@ -27,7 +27,6 @@ rcl_publisher_t tof_publisher;
 
 void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 {
-	rcl_ret_t rc;
 	UNUSED(last_call_time);
 	if (timer != NULL) {
 		struct sensor_value value;
@@ -57,7 +56,6 @@ void main(void)
 	// ---- micro-ROS configuration ----
 	rcl_allocator_t allocator = rcl_get_default_allocator();
 	rclc_support_t support;
-	rcl_ret_t rc;
 
 	// create init_options
 	RCCHECK(rclc_support_init(&support, argc, argv, &allocator));
