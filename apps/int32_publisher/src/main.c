@@ -1,19 +1,9 @@
 #include <zephyr.h>
-#include <device.h>
-#include <drivers/sensor.h>
-#include <drivers/gpio.h>
-#include <drivers/led_strip.h>
-#include <drivers/spi.h>
 #include <stdio.h>
-#include <sys/util.h>
-#include <string.h>
-#include <sys/printk.h>
 
 #include <rcl/rcl.h>
-#include <rcl_action/rcl_action.h>
 #include <rcl/error_handling.h>
 #include <std_msgs/msg/int32.h>
-#include <std_msgs/msg/bool.h>
 
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
