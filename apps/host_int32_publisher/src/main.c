@@ -16,7 +16,6 @@ std_msgs__msg__Int32 msg;
 
 void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 {
-  rcl_ret_t rc;
   UNUSED(last_call_time);
   if (timer != NULL) {
     RCSOFTCHECK(rcl_publish(&publisher, &pub_msg, NULL));
@@ -28,7 +27,6 @@ void main(void)
 {	
 	rcl_allocator_t allocator = rcl_get_default_allocator();
 	rclc_support_t support;
-	rcl_ret_t rc;
 
 	// create init_options
 	RCCHECK(rclc_support_init(&support, argc, argv, &allocator));
