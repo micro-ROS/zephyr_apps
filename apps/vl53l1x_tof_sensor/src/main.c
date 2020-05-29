@@ -27,48 +27,33 @@
 #endif
 
 static struct device *led;
+int32_t debug = 2;
+
+rcl_publisher_t tof_publisher;
+rcl_publisher_t trigger_publisher;
+rcl_subscription_t verbosity_subscription;
+rcl_subscription_t thr_subscription;
+
+std_msgs__msg__Bool verbosity_msg;
+std_msgs__msg__Int32 thr_msg;
+
+void verbosity_subscription_callback(const void * msgin)
+{
+	const std_msgs__msg__Int32 * msg = (const std_msgs__msg__Int32 *)msgin;
+	debug = msg.data;
+}
+
+void thr_subscription_callback(const void * msgin)
+{
+	const std_msgs__msg__Int32 * msg = (const std_msgs__msg__Int32 *)msgin;
+	threshold = msg.data;
+}
 
 void main(void)
 {	
+	// ---- Devices configuration ----
 	led = device_get_binding(DT_ALIAS_LED0_GPIOS_CONTROLLER);
 	gpio_pin_configure(led, DT_ALIAS_LED0_GPIOS_PIN, GPIO_OUTPUT_ACTIVE | DT_ALIAS_LED0_GPIOS_FLAGS);
-
-	printk("Hello World! %s\n", CONFIG_ARCH);
-
-	rcl_init_options_t options = rcl_get_zero_initialized_init_options();
-
-	RCCHECK(rcl_init_options_init(&options, rcl_get_default_allocator()))
-
-	// Optional RMW configuration 
-	rmw_init_options_t* rmw_options = rcl_init_options_get_rmw_init_options(&options);
-	RCCHECK(rmw_uros_options_set_client_key(0xBA5EBA11, rmw_options))
-
-	rcl_context_t context = rcl_get_zero_initialized_context();
-	RCCHECK(rcl_init(0, NULL, &options, &context))
-
-	rcl_node_options_t node_ops = rcl_node_get_default_options();
-
-	rcl_node_t node = rcl_get_zero_initialized_node();
-	RCCHECK(rcl_node_init(&node, "int32_publisher_rcl", "", &context, &node_ops))
-
-	rcl_publisher_options_t publisher_measure_ops = rcl_publisher_get_default_options();
-	rcl_publisher_t publisher_measure = rcl_get_zero_initialized_publisher();
-	RCCHECK(rcl_publisher_init(&publisher_measure, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/tof/measure", &publisher_measure_ops))
-
-	rcl_publisher_options_t publisher_trigger_ops = rcl_publisher_get_default_options();
-	rcl_publisher_t publisher_trigger = rcl_get_zero_initialized_publisher();
-	RCCHECK(rcl_publisher_init(&publisher_trigger, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/tof/trigger", &publisher_trigger_ops))
-
-	rcl_subscription_options_t subscription_debug_ops = rcl_subscription_get_default_options();
-	rcl_subscription_t subscription_debug = rcl_get_zero_initialized_subscription();
-	RCCHECK(rcl_subscription_init(&subscription_debug, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/tof/verbose", &subscription_debug_ops))
-
-	rcl_subscription_options_t subscription_thr_ops = rcl_subscription_get_default_options();
-	rcl_subscription_t subscription_thr = rcl_get_zero_initialized_subscription();
-	RCCHECK(rcl_subscription_init(&subscription_thr, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/tof/threshold", &subscription_thr_ops))
-
-	rcl_wait_set_t wait_set = rcl_get_zero_initialized_wait_set();
-  	RCCHECK(rcl_wait_set_init(&wait_set, 2, 0, 0, 0, 0, 0, &context, rcl_get_default_allocator()))
 
 	struct device *dev = device_get_binding(DT_INST_0_ST_VL53L1X_LABEL);
 	struct sensor_value value;
@@ -79,38 +64,51 @@ void main(void)
 	}
 
 
+	// ---- micro-ROS configuration ----
+	rcl_allocator_t allocator = rcl_get_default_allocator();
+	rclc_support_t support;
+
+	// create init_options
+	RCCHECK(rclc_support_init(&support, argc, argv, &allocator));
+
+	// create node
+	rcl_node_t node = rcl_get_zero_initialized_node();
+	RCCHECK(rclc_node_init_default(&node, "zephyr_sensors_node", "", &support));
+
+
+	// Creating TOF publisher
+	RCCHECK(rclc_publisher_init_default(&tof_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/tof/measure"));
+
+	// Creating a trigger publisher
+	RCCHECK(rclc_publisher_init_default(&trigger_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/tof/trigger"));
+	// trigger_publisher_ops.qos.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
+
+	// Creating a verbosity subscriber
+	RCCHECK(rclc_subscription_init_default(&verbosity_subscription, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/tof/verbose"));
+
+	// Creating a thresold subscriber
+	RCCHECK(rclc_subscription_init_default(&thr_subscription, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/tof/threshold"));
+
+	// Creating a executor
+	rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
+	RCCHECK(rclc_executor_init(&executor, &support.context, 2, &allocator));
+
+	unsigned int rcl_wait_timeout = 10;   // in ms
+	RCCHECK(rclc_executor_set_timeout(&executor, RCL_MS_TO_NS(rcl_wait_timeout)));
+	RCCHECK(rclc_executor_add_subscription(&executor, &verbosity_subscription, &verbosity_msg, &verbosity_subscription_callback, ON_NEW_DATA));
+	RCCHECK(rclc_executor_add_subscription(&executor, &thr_subscription, &thr_msg, &thr_subscription_callback, ON_NEW_DATA));
+
+	// ---- Main loop ----
 	int32_t threshold = 300;
 	uint32_t measure;
-	int32_t debug = 2;
 	bool state = false;
 
 	while (1) {
 		sensor_sample_fetch(dev);
 		sensor_channel_get(dev, SENSOR_CHAN_DISTANCE, &value);
 		measure = value.val1 + value.val2;
-		
-		RCSOFTCHECK(rcl_wait_set_clear(&wait_set))
-    
-		size_t index_subscription_debug;
-		RCSOFTCHECK(rcl_wait_set_add_subscription(&wait_set, &subscription_debug, &index_subscription_debug))
 
-		size_t index_subscription_thr;
-		RCSOFTCHECK(rcl_wait_set_add_subscription(&wait_set, &subscription_thr, &index_subscription_thr))
-
-		RCSOFTCHECK(rcl_wait(&wait_set, RCL_MS_TO_NS(50)))
-
-		if (wait_set.subscriptions[index_subscription_debug]) {
-			std_msgs__msg__Int32 msg;
-			rcl_take(wait_set.subscriptions[index_subscription_debug], &msg, NULL, NULL);
-			debug = msg.data;
-		}
-
-		if (wait_set.subscriptions[index_subscription_thr]) {
-			std_msgs__msg__Int32 msg;
-			rcl_take(wait_set.subscriptions[index_subscription_thr], &msg, NULL, NULL);
-			threshold = msg.data;
-		}
-
+		rclc_executor_spin_some(&executor, 10);
 
 		if (debug == 2){
 			std_msgs__msg__Int32 msg;
@@ -128,7 +126,6 @@ void main(void)
 		}
 		
 		gpio_pin_set(led, DT_ALIAS_LED0_GPIOS_PIN, (int)state);
-
 
 		// Serial print
 
