@@ -89,7 +89,6 @@ void main(void)
 	sensor_attr_set(imu_sensor, SENSOR_CHAN_GYRO_XYZ, SENSOR_ATTR_SAMPLING_FREQUENCY, &imu_value);
 
 	// ---- micro-ROS configuration ----
-
 	rcl_allocator_t allocator = rcl_get_default_allocator();
 	rclc_support_t support;
 	rcl_ret_t rc;
