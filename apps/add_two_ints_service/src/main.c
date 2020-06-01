@@ -61,7 +61,6 @@ void main(void)
 
 			RCSOFTCHECK(rcl_send_response(&serv,&req_id,&res))
 		}
-		k_sleep(100);
 	} while ( true );
 
   RCCHECK(rcl_service_fini(&serv,&node))
