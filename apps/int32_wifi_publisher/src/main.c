@@ -37,7 +37,7 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 {
   UNUSED(last_call_time);
   if (timer != NULL) {
-    RCSOFTCHECK(rcl_publish(&publisher, &pub_msg, NULL));
+    RCSOFTCHECK(rcl_publish(&publisher, &msg, NULL));
 	msg.data++;
   }
 }
@@ -80,7 +80,7 @@ void main(void)
 	rclc_support_t support;
 
 	// create init_options
-	RCCHECK(rclc_support_init(&support, argc, argv, &allocator));
+	RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
 
 	// create node
 	rcl_node_t node = rcl_get_zero_initialized_node();
@@ -114,7 +114,7 @@ void main(void)
 	
 	while(1){
     	rclc_executor_spin_some(&executor, 10);
-		k_sleep(10);
+		usleep(10000);
 	}
 
 	RCCHECK(rcl_publisher_fini(&publisher, &node))

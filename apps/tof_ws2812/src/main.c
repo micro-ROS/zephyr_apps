@@ -1,5 +1,6 @@
 #include <zephyr.h>
 #include <device.h>
+#include <devicetree.h>
 #include <drivers/sensor.h>
 #include <drivers/gpio.h>
 #include <drivers/led_strip.h>
@@ -10,19 +11,19 @@
 #include <sys/printk.h>
 
 #include <rcl/rcl.h>
-#include <rcl_action/rcl_action.h>
 #include <rcl/error_handling.h>
-#include <std_msgs/msg/int32.h>
+#include <rclc/rclc.h>
+#include <rclc/executor.h>
+
 #include <std_msgs/msg/bool.h>
+#include <std_msgs/msg/int32.h>
 
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc);}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
 
-#ifndef DT_ALIAS_LED0_GPIOS_FLAGS
-#define DT_ALIAS_LED0_GPIOS_FLAGS 0
-#endif
+#define PIN	DT_GPIO_PIN(DT_ALIAS(led0), gpios)
 
-#define STRIP_NUM_PIXELS	DT_ALIAS_LED_STRIP_CHAIN_LENGTH
+#define STRIP_NUM_PIXELS 8
 #define DELAY_TIME K_MSEC(50)
 #define RGB(_r, _g, _b) { .r = (_r), .g = (_g), .b = (_b) }
 
@@ -42,12 +43,17 @@ static struct device *tof;
 static uint32_t measure_ext = 2000;
 static bool trigger = false;
 
+rcl_subscription_t tof_subscription;
+rcl_subscription_t trigger_subscription;
+
+std_msgs__msg__Bool led_msg;
+std_msgs__msg__Int32 thr_msg;
 
 void trigger_subscription_callback(const void * msgin)
 {
 	const std_msgs__msg__Bool * msg = (const std_msgs__msg__Bool *)msgin;
-	trigger = msg.data;
-	gpio_pin_set(led, DT_ALIAS_LED0_GPIOS_PIN, (int)(msg.data) ? 1 : 0);
+	trigger = msg->data;
+	gpio_pin_set(led, PIN, (int)(msg->data) ? 1 : 0);
 
 	if(trigger){
 		struct led_rgb c = RGB(0x0f, 0x00, 0x00);
@@ -60,7 +66,7 @@ void trigger_subscription_callback(const void * msgin)
 void tof_subscription_callback(const void * msgin)
 {
 	const std_msgs__msg__Int32 * msg = (const std_msgs__msg__Int32 *)msgin;
-	measure_ext = msg.data;
+	measure_ext = msg->data;
 
 	if(!trigger){
 		float val = ((float) measure_ext/1300.0);
@@ -78,7 +84,7 @@ void tof_subscription_callback(const void * msgin)
 void main(void)
 {	
 	// ---- Devices configuration ----
-	strip = device_get_binding(DT_ALIAS_LED_STRIP_LABEL);
+	strip = device_get_binding(DT_LABEL(DT_ALIAS(led_strip)));
 
 	struct led_rgb c = RGB(0x00, 0x00, 0x0f);
 	for(size_t j = 0 ; j < STRIP_NUM_PIXELS ; j++){
@@ -88,10 +94,10 @@ void main(void)
 	led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
 
 
-	led = device_get_binding(DT_ALIAS_LED0_GPIOS_CONTROLLER);
-	gpio_pin_configure(led, DT_ALIAS_LED0_GPIOS_PIN, GPIO_OUTPUT_ACTIVE | DT_ALIAS_LED0_GPIOS_FLAGS);
+	led = device_get_binding(DT_GPIO_LABEL(DT_ALIAS(led0), gpios));
+	gpio_pin_configure(led, PIN, GPIO_OUTPUT_ACTIVE | 0);
 
-	tof = device_get_binding(DT_INST_0_ST_VL53L0X_LABEL);
+	tof = device_get_binding(DT_LABEL(DT_INST(0, st_vl53l0x)));
 	struct sensor_value value;
 
 	// ---- micro-ROS configuration ----
@@ -99,7 +105,7 @@ void main(void)
 	rclc_support_t support;
 
 	// create init_options
-	RCCHECK(rclc_support_init(&support, argc, argv, &allocator));
+	RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
 
 	// create node
 	rcl_node_t node = rcl_get_zero_initialized_node();
@@ -122,7 +128,7 @@ void main(void)
 
 
 	// ---- Main loop ----
-	gpio_pin_set(led, DT_ALIAS_LED0_GPIOS_PIN, 0);
+	gpio_pin_set(led, PIN, 0);
 
 	uint32_t measure;
 

@@ -19,9 +19,9 @@ void main(void)
 	RCCHECK(rcl_init_options_init(&options, rcl_get_default_allocator()))
 
 	// Optional RMW configuration 
-	rmw_init_options_t* rmw_options = rcl_init_options_get_rmw_init_options(&options);
-	rmw_uros_options_set_serial_device("1", rmw_options);
-	RCCHECK(rmw_uros_options_set_client_key(0xDEADBEEF, rmw_options))
+	// rmw_init_options_t* rmw_options = rcl_init_options_get_rmw_init_options(&options);
+	// rmw_uros_options_set_serial_device("1", rmw_options);
+	// RCCHECK(rmw_uros_options_set_client_key(0xDEADBEEF, rmw_options))
 
 	rcl_context_t context = rcl_get_zero_initialized_context();
 	RCCHECK(rcl_init(0, NULL, &options, &context))
@@ -61,7 +61,7 @@ void main(void)
 
 			RCSOFTCHECK(rcl_send_response(&serv,&req_id,&res))
 		}
-		k_sleep(100);
+		usleep(100000);
 	} while ( true );
 
   RCCHECK(rcl_service_fini(&serv,&node))
