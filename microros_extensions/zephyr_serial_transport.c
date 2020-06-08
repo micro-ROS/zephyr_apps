@@ -68,7 +68,7 @@ size_t uxr_write_serial_data_platform(uxrSerialPlatform* platform, uint8_t* buf,
 }
 
 size_t uxr_read_serial_data_platform(uxrSerialPlatform* platform, uint8_t* buf, size_t len, int timeout, uint8_t* errcode){ 
-    size_t read = 0;
+    size_t read_bytes = 0;
     int spent_time = 0;
 
     while(ring_buf_is_empty(&in_ringbuf) && spent_time < timeout){
@@ -77,8 +77,8 @@ size_t uxr_read_serial_data_platform(uxrSerialPlatform* platform, uint8_t* buf, 
     }
 
     uart_irq_rx_disable(platform->uart_dev);
-    read = ring_buf_get(&in_ringbuf, buf, len);
+    read_bytes = ring_buf_get(&in_ringbuf, buf, len);
     uart_irq_rx_enable(platform->uart_dev);
 
-    return read;
+    return read_bytes;
  }
