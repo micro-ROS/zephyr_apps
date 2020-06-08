@@ -30,7 +30,6 @@ static void uart_fifo_callback(struct device *dev){
                 recv_len = uart_fifo_read(dev, buffer, len);
                 ring_buf_put(&in_ringbuf, buffer, recv_len);
             }
-
         }
     }
 }
