@@ -18,11 +18,6 @@ void main(void)
 	rcl_init_options_t options = rcl_get_zero_initialized_init_options();
 	RCCHECK(rcl_init_options_init(&options, rcl_get_default_allocator()))
 
-	// Optional RMW configuration 
-	// rmw_init_options_t* rmw_options = rcl_init_options_get_rmw_init_options(&options);
-	// rmw_uros_options_set_serial_device("1", rmw_options);
-	// RCCHECK(rmw_uros_options_set_client_key(0xDEADBEEF, rmw_options))
-
 	rcl_context_t context = rcl_get_zero_initialized_context();
 	RCCHECK(rcl_init(0, NULL, &options, &context))
 
