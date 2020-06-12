@@ -25,7 +25,7 @@ void main(void)
 	rcl_node_t node = rcl_get_zero_initialized_node();
 	RCCHECK(rcl_node_init(&node, "addtowints_server_rcl", "", &context, &node_ops))
 
-	const char * service_name = "addtwoints";
+	const char * service_name = "add_two_ints";
 	rcl_service_options_t service_op = rcl_service_get_default_options();
 	rcl_service_t serv = rcl_get_zero_initialized_service();
 	const rosidl_service_type_support_t * service_type_support = ROSIDL_GET_SRV_TYPE_SUPPORT(example_interfaces, srv, AddTwoInts);
