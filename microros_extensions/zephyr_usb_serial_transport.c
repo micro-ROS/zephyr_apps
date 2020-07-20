@@ -52,7 +52,7 @@ static void uart_fifo_callback(struct device *dev){
 
 bool uxr_init_serial_platform(struct uxrSerialPlatform* platform, int fd, uint8_t remote_addr, uint8_t local_addr){  
     int ret;
-    u32_t baudrate, dtr = 0U;
+    uint32_t baudrate, dtr = 0U;
 
     platform->uart_dev = device_get_binding("CDC_ACM_0");
     if (!platform->uart_dev) {
