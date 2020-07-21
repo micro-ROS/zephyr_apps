@@ -1,5 +1,6 @@
 #include <zephyr.h>
 #include <device.h>
+#include <devicetree.h>
 #include <drivers/sensor.h>
 #include <drivers/gpio.h>
 #include <drivers/led_strip.h>
@@ -10,19 +11,19 @@
 #include <sys/printk.h>
 
 #include <rcl/rcl.h>
-#include <rcl_action/rcl_action.h>
 #include <rcl/error_handling.h>
-#include <std_msgs/msg/int32.h>
+#include <rclc/rclc.h>
+#include <rclc/executor.h>
+
 #include <std_msgs/msg/bool.h>
+#include <std_msgs/msg/int32.h>
 
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc);}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
 
-#ifndef DT_ALIAS_LED0_GPIOS_FLAGS
-#define DT_ALIAS_LED0_GPIOS_FLAGS 0
-#endif
+#define PIN	DT_GPIO_PIN(DT_ALIAS(led0), gpios)
 
-#define STRIP_NUM_PIXELS	DT_ALIAS_LED_STRIP_CHAIN_LENGTH
+#define STRIP_NUM_PIXELS 8
 #define DELAY_TIME K_MSEC(50)
 #define RGB(_r, _g, _b) { .r = (_r), .g = (_g), .b = (_b) }
 
@@ -39,13 +40,51 @@ static struct device *led;
 static struct device *strip;
 static struct device *tof;
 
-static bool microros_init = false;
 static uint32_t measure_ext = 2000;
 static bool trigger = false;
 
+rcl_subscription_t tof_subscription;
+rcl_subscription_t trigger_subscription;
+
+std_msgs__msg__Bool led_msg;
+std_msgs__msg__Int32 thr_msg;
+
+void trigger_subscription_callback(const void * msgin)
+{
+	const std_msgs__msg__Bool * msg = (const std_msgs__msg__Bool *)msgin;
+	trigger = msg->data;
+	gpio_pin_set(led, PIN, (int)(msg->data) ? 1 : 0);
+
+	if(trigger){
+		struct led_rgb c = RGB(0x0f, 0x00, 0x00);
+		for(size_t j = 0 ; j < STRIP_NUM_PIXELS ; j++){
+			memcpy(&pixels[j], &c, sizeof(struct led_rgb));
+		}
+	}
+}
+
+void tof_subscription_callback(const void * msgin)
+{
+	const std_msgs__msg__Int32 * msg = (const std_msgs__msg__Int32 *)msgin;
+	measure_ext = msg->data;
+
+	if(!trigger){
+		float val = ((float) measure_ext/1300.0);
+		val = (val > 1) ? STRIP_NUM_PIXELS : STRIP_NUM_PIXELS*val;
+		int nval = (int)val;
+
+		struct led_rgb c = RGB(0x00, 0x0f, 0x00);
+		memset(&pixels, 0x00, sizeof(pixels));
+		for(size_t j = 0 ; j < STRIP_NUM_PIXELS-nval ; j++){
+			memcpy(&pixels[j], &c, sizeof(struct led_rgb));
+		}
+	}
+}
+
 void main(void)
 {	
-	strip = device_get_binding(DT_ALIAS_LED_STRIP_LABEL);
+	// ---- Devices configuration ----
+	strip = device_get_binding(DT_LABEL(DT_ALIAS(led_strip)));
 
 	struct led_rgb c = RGB(0x00, 0x00, 0x0f);
 	for(size_t j = 0 ; j < STRIP_NUM_PIXELS ; j++){
@@ -55,43 +94,41 @@ void main(void)
 	led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
 
 
-	led = device_get_binding(DT_ALIAS_LED0_GPIOS_CONTROLLER);
-	gpio_pin_configure(led, DT_ALIAS_LED0_GPIOS_PIN, GPIO_OUTPUT_ACTIVE | DT_ALIAS_LED0_GPIOS_FLAGS);
+	led = device_get_binding(DT_GPIO_LABEL(DT_ALIAS(led0), gpios));
+	gpio_pin_configure(led, PIN, GPIO_OUTPUT_ACTIVE | 0);
 
-	tof = device_get_binding(DT_INST_0_ST_VL53L0X_LABEL);
+	tof = device_get_binding(DT_LABEL(DT_INST(0, st_vl53l0x)));
 	struct sensor_value value;
 
-	rcl_init_options_t options = rcl_get_zero_initialized_init_options();
+	// ---- micro-ROS configuration ----
+	rcl_allocator_t allocator = rcl_get_default_allocator();
+	rclc_support_t support;
 
-	RCCHECK(rcl_init_options_init(&options, rcl_get_default_allocator()))
+	// create init_options
+	RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
 
-	// Optional RMW configuration 
-	rmw_init_options_t* rmw_options = rcl_init_options_get_rmw_init_options(&options);
-	RCCHECK(rmw_uros_options_set_client_key(0xDEADBEEF, rmw_options))
-
-	rcl_context_t context = rcl_get_zero_initialized_context();
-	RCCHECK(rcl_init(0, NULL, &options, &context))
-
-	rcl_node_options_t node_ops = rcl_node_get_default_options();
-
+	// create node
 	rcl_node_t node = rcl_get_zero_initialized_node();
-	RCCHECK(rcl_node_init(&node, "zephyr_tof_leds", "", &context, &node_ops))
+	RCCHECK(rclc_node_init_default(&node, "zephyr_tof_leds", "", &support));
 
-	rcl_subscription_options_t subscription_trigger_ops = rcl_subscription_get_default_options();
-	rcl_subscription_t subscription_trigger = rcl_get_zero_initialized_subscription();
-	RCCHECK(rcl_subscription_init(&subscription_trigger, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/sensors/tof/trigger", &subscription_trigger_ops))
+	// Creating tof subscriber
+	RCCHECK(rclc_subscription_init_default(&trigger_subscription, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/sensors/tof/trigger"));
 
-	rcl_subscription_options_t subscription_measure_ops = rcl_subscription_get_default_options();
-	rcl_subscription_t subscription_measure = rcl_get_zero_initialized_subscription();
-	RCCHECK(rcl_subscription_init(&subscription_measure, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/sensors/tof", &subscription_measure_ops))
+	// Creating trigger subscriber
+	RCCHECK(rclc_subscription_init_default(&tof_subscription, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/sensors/tof"));
+
+	// Creating a executor
+	rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
+	RCCHECK(rclc_executor_init(&executor, &support.context, 2, &allocator));
+
+	unsigned int rcl_wait_timeout = 10;   // in ms
+	RCCHECK(rclc_executor_set_timeout(&executor, RCL_MS_TO_NS(rcl_wait_timeout)));
+	RCCHECK(rclc_executor_add_subscription(&executor, &trigger_subscription, &led_msg, &trigger_subscription_callback, ON_NEW_DATA));
+	RCCHECK(rclc_executor_add_subscription(&executor, &tof_subscription, &thr_msg, &tof_subscription_callback, ON_NEW_DATA));
 
 
-	rcl_wait_set_t wait_set = rcl_get_zero_initialized_wait_set();
-  	RCCHECK(rcl_wait_set_init(&wait_set, 2, 0, 0, 0, 0, 0, &context, rcl_get_default_allocator()))
-
-	microros_init = true;
-
-	gpio_pin_set(led, DT_ALIAS_LED0_GPIOS_PIN, 0);
+	// ---- Main loop ----
+	gpio_pin_set(led, PIN, 0);
 
 	uint32_t measure;
 
@@ -105,47 +142,7 @@ void main(void)
 		sensor_channel_get(tof, SENSOR_CHAN_DISTANCE, &value);
 		measure = value.val1;
 		
-		RCSOFTCHECK(rcl_wait_set_clear(&wait_set))
-    
-		size_t index_subscription_trigger;
-		RCSOFTCHECK(rcl_wait_set_add_subscription(&wait_set, &subscription_trigger, &index_subscription_trigger))
-
-		size_t index_measure_ext;
-		RCSOFTCHECK(rcl_wait_set_add_subscription(&wait_set, &subscription_measure, &index_measure_ext))
-		
-		RCSOFTCHECK(rcl_wait(&wait_set, RCL_MS_TO_NS(10)))
-
-		if (wait_set.subscriptions[index_subscription_trigger]) {
-			std_msgs__msg__Bool msg;
-			rcl_take(wait_set.subscriptions[index_subscription_trigger], &msg, NULL, NULL);
-			trigger = msg.data;
-			gpio_pin_set(led, DT_ALIAS_LED0_GPIOS_PIN, (int)(msg.data) ? 1 : 0);
-
-			if(trigger){
-				struct led_rgb c = RGB(0x0f, 0x00, 0x00);
-				for(size_t j = 0 ; j < STRIP_NUM_PIXELS ; j++){
-					memcpy(&pixels[j], &c, sizeof(struct led_rgb));
-				}
-			}
-		}
-
-		if (wait_set.subscriptions[index_measure_ext]) {
-			std_msgs__msg__Int32 msg;
-			rcl_take(wait_set.subscriptions[index_measure_ext], &msg, NULL, NULL);
-			measure_ext = msg.data;
-
-			if(!trigger){
-				float val = ((float) measure_ext/1300.0);
-				val = (val > 1) ? STRIP_NUM_PIXELS : STRIP_NUM_PIXELS*val;
-				int nval = (int)val;
-
-				struct led_rgb c = RGB(0x00, 0x0f, 0x00);
-				memset(&pixels, 0x00, sizeof(pixels));
-				for(size_t j = 0 ; j < STRIP_NUM_PIXELS-nval ; j++){
-					memcpy(&pixels[j], &c, sizeof(struct led_rgb));
-				}
-			}
-		}
+		rclc_executor_spin_some(&executor, 10);
 
 		led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
 

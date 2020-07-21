@@ -14,8 +14,8 @@
 
 #define RING_BUF_SIZE 2048
 
-u8_t uart_in_buffer[RING_BUF_SIZE];
-u8_t uart_out_buffer[RING_BUF_SIZE];
+char uart_in_buffer[RING_BUF_SIZE];
+char uart_out_buffer[RING_BUF_SIZE];
 
 struct ring_buf out_ringbuf, in_ringbuf;
 
@@ -23,7 +23,7 @@ static void uart_fifo_callback(struct device *dev){
     while (uart_irq_update(dev) && uart_irq_is_pending(dev)) {
         if (uart_irq_rx_ready(dev)) {
             int recv_len;
-            u8_t buffer[64];
+            char buffer[64];
             size_t len = MIN(ring_buf_space_get(&in_ringbuf), sizeof(buffer));
 
             if (len > 0){
@@ -34,7 +34,7 @@ static void uart_fifo_callback(struct device *dev){
         }
 
         if (uart_irq_tx_ready(dev)) {			
-            u8_t buffer[64];
+            char buffer[64];
             int rb_len;
 
             rb_len = ring_buf_get(&out_ringbuf, buffer, sizeof(buffer));
@@ -52,7 +52,7 @@ static void uart_fifo_callback(struct device *dev){
 
 bool uxr_init_serial_platform(struct uxrSerialPlatform* platform, int fd, uint8_t remote_addr, uint8_t local_addr){  
     int ret;
-    u32_t baudrate, dtr = 0U;
+    uint32_t baudrate, dtr = 0U;
 
     platform->uart_dev = device_get_binding("CDC_ACM_0");
     if (!platform->uart_dev) {

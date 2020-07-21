@@ -9,6 +9,10 @@ endif()
 
 set(BOARD_ROOT ${CMAKE_CURRENT_LIST_DIR})
 
+list(APPEND ZEPHYR_EXTRA_MODULES
+  ${CMAKE_CURRENT_SOURCE_DIR}/vl53l1x_driver
+)
+
 include($ENV{ZEPHYR_BASE}/cmake/app/boilerplate.cmake NO_POLICY_SCOPE)
 project(microrosapp C CXX)
 
