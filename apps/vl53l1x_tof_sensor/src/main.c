@@ -1,9 +1,3 @@
-/*
- * Copyright (c) 2017 STMicroelectronics
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-
 #include <zephyr.h>
 #include <device.h>
 #include <drivers/sensor.h>
@@ -14,17 +8,17 @@
 #include <sys/printk.h>
 
 #include <rcl/rcl.h>
-#include <rcl_action/rcl_action.h>
+#include <rclc/rclc.h>
+#include <rclc/executor.h>
 #include <rcl/error_handling.h>
+
 #include <std_msgs/msg/int32.h>
 #include <std_msgs/msg/bool.h>
 
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc);}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
 
-#ifndef DT_ALIAS_LED0_GPIOS_FLAGS
-#define DT_ALIAS_LED0_GPIOS_FLAGS 0
-#endif
+#define PIN	DT_GPIO_PIN(DT_ALIAS(led0), gpios)
 
 static struct device *led;
 int32_t debug = 2;
@@ -37,39 +31,39 @@ rcl_subscription_t thr_subscription;
 std_msgs__msg__Bool verbosity_msg;
 std_msgs__msg__Int32 thr_msg;
 
+int32_t threshold = 300;
+
 void verbosity_subscription_callback(const void * msgin)
 {
 	const std_msgs__msg__Int32 * msg = (const std_msgs__msg__Int32 *)msgin;
-	debug = msg.data;
+	debug = msg->data;
 }
 
 void thr_subscription_callback(const void * msgin)
 {
 	const std_msgs__msg__Int32 * msg = (const std_msgs__msg__Int32 *)msgin;
-	threshold = msg.data;
+	threshold = msg->data;
 }
 
 void main(void)
 {	
 	// ---- Devices configuration ----
-	led = device_get_binding(DT_ALIAS_LED0_GPIOS_CONTROLLER);
-	gpio_pin_configure(led, DT_ALIAS_LED0_GPIOS_PIN, GPIO_OUTPUT_ACTIVE | DT_ALIAS_LED0_GPIOS_FLAGS);
+	led = device_get_binding(DT_GPIO_LABEL(DT_ALIAS(led0), gpios));
+	gpio_pin_configure(led, PIN, GPIO_OUTPUT_ACTIVE | 0);
 
-	struct device *dev = device_get_binding(DT_INST_0_ST_VL53L1X_LABEL);
+	struct device *dev = device_get_binding(DT_LABEL(DT_INST(0, st_vl53l1x)));
 	struct sensor_value value;
 
 	if (dev == NULL) {
 		printk("Could not get VL53L0X device\n");
-		return;
 	}
-
 
 	// ---- micro-ROS configuration ----
 	rcl_allocator_t allocator = rcl_get_default_allocator();
 	rclc_support_t support;
 
 	// create init_options
-	RCCHECK(rclc_support_init(&support, argc, argv, &allocator));
+	RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
 
 	// create node
 	rcl_node_t node = rcl_get_zero_initialized_node();
@@ -99,7 +93,6 @@ void main(void)
 	RCCHECK(rclc_executor_add_subscription(&executor, &thr_subscription, &thr_msg, &thr_subscription_callback, ON_NEW_DATA));
 
 	// ---- Main loop ----
-	int32_t threshold = 300;
 	uint32_t measure;
 	bool state = false;
 
@@ -113,7 +106,7 @@ void main(void)
 		if (debug == 2){
 			std_msgs__msg__Int32 msg;
 			msg.data = measure;
-			rcl_publish(&publisher_measure, (const void*)&msg, NULL);
+			rcl_publish(&tof_publisher, (const void*)&msg, NULL);
 		}
 
 		bool old_state = state;
@@ -122,10 +115,10 @@ void main(void)
 		if (state != old_state || debug >= 1){
 			std_msgs__msg__Bool msg;
 			msg.data = state;
-			rcl_publish(&publisher_trigger, (const void*)&msg, NULL);
+			rcl_publish(&trigger_publisher, (const void*)&msg, NULL);
 		}
 		
-		gpio_pin_set(led, DT_ALIAS_LED0_GPIOS_PIN, (int)state);
+		gpio_pin_set(led, PIN, (int)state);
 
 		// Serial print
 

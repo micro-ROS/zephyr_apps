@@ -8,17 +8,16 @@
 #include <sys/printk.h>
 
 #include <rcl/rcl.h>
-#include <rcl_action/rcl_action.h>
+#include <rclc/rclc.h>
+#include <rclc/executor.h>
 #include <rcl/error_handling.h>
+
 #include <std_msgs/msg/float32.h>
 
+#define PIN	DT_GPIO_PIN(DT_ALIAS(led0), gpios)
 
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc);}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
-
-#ifndef DT_ALIAS_LED0_GPIOS_FLAGS
-#define DT_ALIAS_LED0_GPIOS_FLAGS 0
-#endif
 
 static struct device *led;
 static struct device *dev;
@@ -43,14 +42,13 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 void main(void)
 {	
 	// ---- Sensor configuration ----
-	led = device_get_binding(DT_ALIAS_LED0_GPIOS_CONTROLLER);
-	gpio_pin_configure(led, DT_ALIAS_LED0_GPIOS_PIN, GPIO_OUTPUT_ACTIVE | DT_ALIAS_LED0_GPIOS_FLAGS);
+	led = device_get_binding(DT_GPIO_LABEL(DT_ALIAS(led0), gpios));
+	gpio_pin_configure(led, PIN, GPIO_OUTPUT_ACTIVE | 0);
 
-	*dev = device_get_binding(DT_INST_0_ST_VL53L1X_LABEL);
+	dev = device_get_binding(DT_LABEL(DT_INST(0, st_vl53l1x)));
 
 	if (dev == NULL) {
-		printk("Could not get VL53L0X device\n");
-		return;
+		printf("Could not get VL53L1X device\n");
 	}
 
 	// ---- micro-ROS configuration ----
@@ -58,7 +56,7 @@ void main(void)
 	rclc_support_t support;
 
 	// create init_options
-	RCCHECK(rclc_support_init(&support, argc, argv, &allocator));
+	RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
 
 	// create node
 	rcl_node_t node = rcl_get_zero_initialized_node();
@@ -83,7 +81,7 @@ void main(void)
 
 	// ---- Main loop ----
 	while(1){
-    	rclc_executor_spin_some(&executor, 10);
-		k_sleep(10);
+    	rclc_executor_spin_some(&executor, 100);
+		usleep(10000);
 	}
 }

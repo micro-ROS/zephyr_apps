@@ -15,17 +15,16 @@ rcl_publisher_t publisher;
 std_msgs__msg__Int32 msg;
 
 void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
-{
-  UNUSED(last_call_time);
-  if (timer != NULL) {
-    RCSOFTCHECK(rcl_publish(&publisher, &msg, NULL));
-	msg.data++;
-  }
+{	
+	UNUSED(last_call_time);
+	if (timer != NULL) {
+		RCSOFTCHECK(rcl_publish(&publisher, &msg, NULL));
+		msg.data++;
+	}
 }
 
 void main(void)
 {	
-	printf("Hola");
 	rcl_allocator_t allocator = rcl_get_default_allocator();
 	rclc_support_t support;
 
@@ -40,7 +39,7 @@ void main(void)
 	RCCHECK(rclc_publisher_init_default(
 		&publisher,
 		&node,
-		ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, String),
+		ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
 		"zephyr_int32_publisher"));
 
 	// create timer,
@@ -63,7 +62,7 @@ void main(void)
 	msg.data = 0;
 	
 	while(1){
-    	rclc_executor_spin_some(&executor, 10);
+    	rclc_executor_spin_some(&executor, 100);
 		usleep(100000);
 	}
 

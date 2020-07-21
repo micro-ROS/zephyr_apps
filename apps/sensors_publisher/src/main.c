@@ -1,5 +1,6 @@
 #include <zephyr.h>
 #include <device.h>
+#include <devicetree.h>
 #include <drivers/sensor.h>
 #include <drivers/gpio.h>
 #include <drivers/led_strip.h>
@@ -10,15 +11,19 @@
 #include <sys/printk.h>
 
 #include <rcl/rcl.h>
-#include <rcl_action/rcl_action.h>
 #include <rcl/error_handling.h>
+#include <rclc/rclc.h>
+#include <rclc/executor.h>
+
 #include <std_msgs/msg/float32.h>
 #include <geometry_msgs/msg/point32.h>
 #include <std_msgs/msg/bool.h>
 #include <std_msgs/msg/int32.h>
 
-#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc); k_sleep(-1);}}
-#define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
+#define PIN	DT_GPIO_PIN(DT_ALIAS(led0), gpios)
+
+#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc); return 1;}}
+#define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
 
 struct device *led;
 
@@ -51,32 +56,31 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 
 	trigger_msg.data = tof_data.data*1000 < threshold;
     RCSOFTCHECK(rcl_publish(&trigger_publisher, &trigger_msg, NULL));
-	msg.data++;
   }
 }
 
 void led_subscription_callback(const void * msgin)
 {
 	const std_msgs__msg__Bool * msg = (const std_msgs__msg__Bool *)msgin;
-	gpio_pin_set(led, DT_ALIAS_LED0_GPIOS_PIN, (int)(msg.data) ? 1 : 0);
+	gpio_pin_set(led, PIN, (int)(msg->data) ? 1 : 0);
 }
 
 void thr_subscription_callback(const void * msgin)
 {
 	const std_msgs__msg__Int32 * msg = (const std_msgs__msg__Int32 *)msgin;
-	threshold = msg.data;
+	threshold = msg->data;
 }
 
 void main(void)
 {	
 	// ---- Sensor configuration ----
-	led = device_get_binding(DT_ALIAS_LED0_GPIOS_CONTROLLER);
-	gpio_pin_configure(led, DT_ALIAS_LED0_GPIOS_PIN, GPIO_OUTPUT_ACTIVE | DT_ALIAS_LED0_GPIOS_FLAGS);
+	led = device_get_binding(DT_GPIO_LABEL(DT_ALIAS(led0), gpios));
+	gpio_pin_configure(led, PIN, GPIO_OUTPUT_ACTIVE | 0);
 
-	struct device *tof_sensor = device_get_binding(DT_INST_0_ST_VL53L0X_LABEL);
+	struct device *tof_sensor = device_get_binding(DT_LABEL(DT_INST(0, st_vl53l0x)));
 	struct sensor_value tof_value;
 
-	struct device *imu_sensor = device_get_binding(DT_INST_0_ST_LSM6DSL_LABEL);
+	struct device *imu_sensor = device_get_binding(DT_LABEL(DT_INST(0, st_lsm6dsl)));
 	struct sensor_value imu_value;
 	struct sensor_value accel_x, accel_y, accel_z;
 
@@ -92,7 +96,7 @@ void main(void)
 	rclc_support_t support;
 
 	// create init_options
-	RCCHECK(rclc_support_init(&support, argc, argv, &allocator));
+	RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
 
 	// create node
 	rcl_node_t node = rcl_get_zero_initialized_node();
@@ -132,7 +136,7 @@ void main(void)
 	RCCHECK(rclc_executor_add_subscription(&executor, &thr_subscription, &thr_msg, &thr_subscription_callback, ON_NEW_DATA));
 
 	// ---- Main loop ----
-	gpio_pin_set(led, DT_ALIAS_LED0_GPIOS_PIN, 0);
+	gpio_pin_set(led, PIN, 0);
 
 	while(1){
 		// Read ToF
@@ -149,8 +153,8 @@ void main(void)
 		imu_data.y = out_ev(&accel_y);
 		imu_data.z = out_ev(&accel_z);
 
-    	rclc_executor_spin_some(&executor, 10);
-		k_sleep(10);
+    	rclc_executor_spin_some(&executor, 100);
+	  	usleep(100000);
 	}
 
 	RCCHECK(rcl_node_fini(&node))
