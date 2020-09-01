@@ -1,6 +1,7 @@
 #include <zephyr.h>
 #include <device.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include <net/net_if.h>
 #include <net/wifi_mgmt.h>
@@ -21,7 +22,7 @@ static struct net_mgmt_event_callback wifi_shell_mgmt_cb;
 static bool connected = 0;
 
 static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb,
-				    u32_t mgmt_event, struct net_if *iface)
+				    uint32_t mgmt_event, struct net_if *iface)
 {	
 	if(NET_EVENT_IPV4_ADDR_ADD == mgmt_event){
 			printf("DHCP Connected\n");
