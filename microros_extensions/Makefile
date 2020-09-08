@@ -24,8 +24,8 @@ ifeq ($(BOARD),native_posix)
 else
 	TOOLCHAIN = $(EXTENSIONS_DIR)/arm_toolchain.cmake
 	OBJECT_EXTENSION = obj
-	CFLAGS_INTERNAL += -I$(FW_DIR)/zephyrproject/zephyr/include/posix
-	CXXFLAGS_INTERNAL += -I$(FW_DIR)/zephyrproject/zephyr/include/posix
+	CFLAGS_INTERNAL := -c -I$(FW_DIR)/zephyrproject/zephyr/include/posix -I$(FW_DIR)/build/zephyr/include/generated $(CFLAGS_INTERNAL)
+	CXXFLAGS_INTERNAL := -c -I$(FW_DIR)/zephyrproject/zephyr/include/posix -I$(FW_DIR)/build/zephyr/include/generated $(CXXFLAGS_INTERNAL)
 endif
 
 all: libmicroros
