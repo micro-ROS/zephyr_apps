@@ -114,7 +114,7 @@ void main(void)
 	msg.data = 0;
 	
 	while(1){
-    	rclc_executor_spin_some(&executor, 10);
+    	rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10));
 		usleep(10000);
 	}
 

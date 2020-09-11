@@ -142,7 +142,7 @@ void main(void)
 		sensor_channel_get(tof, SENSOR_CHAN_DISTANCE, &value);
 		measure = value.val1;
 		
-		rclc_executor_spin_some(&executor, 10);
+		rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10));
 
 		led_strip_update_rgb(strip, pixels, STRIP_NUM_PIXELS);
 
