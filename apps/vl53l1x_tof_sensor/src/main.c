@@ -101,7 +101,7 @@ void main(void)
 		sensor_channel_get(dev, SENSOR_CHAN_DISTANCE, &value);
 		measure = value.val1 + value.val2;
 
-		rclc_executor_spin_some(&executor, 10);
+		rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10));
 
 		if (debug == 2){
 			std_msgs__msg__Int32 msg;

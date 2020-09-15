@@ -153,7 +153,7 @@ void main(void)
 		imu_data.y = out_ev(&accel_y);
 		imu_data.z = out_ev(&accel_z);
 
-    	rclc_executor_spin_some(&executor, 100);
+    	rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
 	  	usleep(100000);
 	}
 

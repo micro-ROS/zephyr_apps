@@ -81,7 +81,7 @@ void main(void)
 
 	// ---- Main loop ----
 	while(1){
-    	rclc_executor_spin_some(&executor, 100);
+    	rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
 		usleep(10000);
 	}
 }
