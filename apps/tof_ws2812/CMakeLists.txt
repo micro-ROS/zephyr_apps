@@ -12,7 +12,7 @@ set(BOARD_ROOT ${CMAKE_CURRENT_LIST_DIR})
 include($ENV{ZEPHYR_BASE}/cmake/app/boilerplate.cmake NO_POLICY_SCOPE)
 project(microrosapp C CXX)
 
-FILE(GLOB app_sources src/*.c ../../microros_extensions/libatomic.c)
+FILE(GLOB app_sources src/*.c)
 
 target_sources(app PRIVATE ${app_sources})
 
