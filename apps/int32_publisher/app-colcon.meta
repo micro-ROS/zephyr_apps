@@ -1,12 +1,5 @@
 {
     "names": {
-        "microxrcedds_client":{
-            "cmake-args":[
-                "-DUCLIENT_PROFILE_DISCOVERY=OFF",
-                "-DUCLIENT_PROFILE_UDP=OFF",
-                "-DUCLIENT_PROFILE_TCP=OFF"
-            ]
-        },
         "rmw_microxrcedds": {
             "cmake-args": [
                 "-DRMW_UXRCE_MAX_NODES=1",
