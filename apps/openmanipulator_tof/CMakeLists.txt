@@ -40,8 +40,8 @@ set(external_project_cxxflags
 
 include(ExternalProject)
 
-set(microros_src_dir   ${CMAKE_CURRENT_SOURCE_DIR}/../../microros_extensions)
-set(microros_build_dir ${CMAKE_CURRENT_BINARY_DIR}/microros_extensions)
+set(microros_src_dir   ${MICRO_ROS_FIRMWARE_DIR}/zephyr_apps/microros_extensions)
+set(microros_build_dir ${MICRO_ROS_FIRMWARE_DIR}/build/microros_extensions)
 
 if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")
 set(submake "$(MAKE)")
@@ -69,11 +69,11 @@ ExternalProject_Add(
     BUILD_BYPRODUCTS ${MICROROS_LIB_DIR}/libmicroros.a
     )
 
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../../mcu_ws/install)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../../mcu_ws/install/include)
+file(MAKE_DIRECTORY ${MICRO_ROS_FIRMWARE_DIR}/mcu_ws/install)
+file(MAKE_DIRECTORY ${MICRO_ROS_FIRMWARE_DIR}/mcu_ws/install/include)
 
-set(MICROROS_LIB_DIR     ${CMAKE_CURRENT_SOURCE_DIR}/../../../mcu_ws/install)
-set(MICROROS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../mcu_ws/install/include)
+set(MICROROS_LIB_DIR     ${MICRO_ROS_FIRMWARE_DIR}/mcu_ws/install)
+set(MICROROS_INCLUDE_DIR ${MICRO_ROS_FIRMWARE_DIR}/mcu_ws/install/include)
 
 add_library(microroslib STATIC IMPORTED GLOBAL)
 add_dependencies(
