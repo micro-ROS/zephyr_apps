@@ -179,14 +179,20 @@ void main(void)
 							(float) ( sensor_value_to_double(&magn_xyz[2]) - mag_calibration[2]),
 							sample_rate);
 		
-		sensfusion9GetQuaternion(&tf_stamped.transform.rotation.x,
-								 &tf_stamped.transform.rotation.y,
-								 &tf_stamped.transform.rotation.z, 
-								 &tf_stamped.transform.rotation.w);
+		float q[4];
+		sensfusion9GetQuaternion(q);
 
-		sensfusion9GetEulerRPY(	&eurler_angles.x,
-								&eurler_angles.y,
-								&eurler_angles.z);
+		tf_stamped.transform.rotation.x = (double) q[1];
+		tf_stamped.transform.rotation.y = (double) q[2];
+		tf_stamped.transform.rotation.z = (double) q[3]; 
+		tf_stamped.transform.rotation.w = (double) q[0];
+
+		float angles[3];
+		sensfusion9GetEulerRPY(angles);
+
+		eurler_angles.x = angles[0];
+		eurler_angles.y = angles[1];
+		eurler_angles.z = angles[2];
 
 		tf_stamped.header.stamp.nanosec = tv.tv_nsec;
 		tf_stamped.header.stamp.sec = tv.tv_sec;

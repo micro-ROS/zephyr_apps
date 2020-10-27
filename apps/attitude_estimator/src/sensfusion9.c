@@ -177,26 +177,26 @@ static void sensfusion9UpdateImpl(float gx, float gy, float gz, float ax, float 
 	q3 *= recipNorm;
 }
 
-void sensfusion9GetQuaternion(double* qx, double* qy, double* qz, double* qw)
+void sensfusion9GetQuaternion(float* q)
 {
-  *qx = (double)q1;
-  *qy = (double)q2;
-  *qz = (double)q3;
-  *qw = (double)q0;
+  q[0] = q0;
+  q[1] = q1;
+  q[2] = q2;
+  q[3] = q3;
 }
 
-void sensfusion9GetEulerRPY(double* roll, double* pitch, double* yaw)
+void sensfusion9GetEulerRPY(float* angles)
 {
-  float gx = gravX;
-  float gy = gravY;
-  float gz = gravZ;
+  double gx = gravX;
+  double gy = gravY;
+  double gz = gravZ;
 
   if (gx>1) gx=1;
   if (gx<-1) gx=-1;
 
-  *yaw = (double) atan2f(2*(q0*q3 + q1*q2), q0*q0 + q1*q1 - q2*q2 - q3*q3) * 180 / M_PI_F;
-  *pitch = (double) asinf(gx) * 180 / M_PI_F; //Pitch seems to be inverted
-  *roll = (double) atan2f(gy, gz) * 180 / M_PI_F;
+  angles[0] =  	(double) atan2f(2*(q0*q3 + q1*q2), q0*q0 + q1*q1 - q2*q2 - q3*q3) * 180 / M_PI_F;
+  angles[1] =  (double) asinf(gx) * 180 / M_PI_F; //Pitch seems to be inverted
+  angles[2] =   (double) atan2f(gy, gz) * 180 / M_PI_F;
 }
 
 //---------------------------------------------------------------------------------------------------
