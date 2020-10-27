@@ -24,7 +24,7 @@
 #include <tf2_msgs/msg/tf_message.h>
 #include <std_msgs/msg/empty.h>
 
-#include <sensfusion6.h>
+#include <sensfusion9.h>
 
 #define STR_CAPACITY 50
 #define LED_PIN		 DT_GPIO_PIN(DT_ALIAS(led0), gpios)
@@ -75,6 +75,33 @@ void main(void)
 	const struct device *button = device_get_binding(SW0_GPIO_LABEL);
 	gpio_pin_configure(button, SW0_GPIO_PIN, SW0_GPIO_FLAGS);
 
+	if (gpio_pin_get(button, SW0_GPIO_PIN)){
+		while(1){
+			sensor_sample_fetch_chan(imu_sensor, SENSOR_CHAN_ACCEL_XYZ);
+			sensor_channel_get(imu_sensor, SENSOR_CHAN_ACCEL_XYZ, accel_xyz);
+			sensor_sample_fetch_chan(imu_sensor, SENSOR_CHAN_GYRO_XYZ);
+			sensor_channel_get(imu_sensor, SENSOR_CHAN_GYRO_XYZ, gyro_xyz);
+			sensor_sample_fetch(lis3mdl);
+			sensor_channel_get(lis3mdl, SENSOR_CHAN_MAGN_XYZ, magn_xyz);
+
+			printf("Uni:%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f\r\n",
+				(float) sensor_value_to_double(&accel_xyz[0]),
+				(float) sensor_value_to_double(&accel_xyz[1]),
+				(float) sensor_value_to_double(&accel_xyz[2]),
+				(float) sensor_value_to_double(&gyro_xyz[0]),
+				(float) sensor_value_to_double(&gyro_xyz[1]),
+				(float) sensor_value_to_double(&gyro_xyz[2]),
+				(float) -sensor_value_to_double(&magn_xyz[0]),
+				(float) -sensor_value_to_double(&magn_xyz[1]),
+				(float) sensor_value_to_double(&magn_xyz[2])
+			);
+		}
+	}
+
+	// Calibration values for ST disco obtained using: https://learn.adafruit.com/adafruit-sensorlab-magnetometer-calibration/magnetic-calibration-with-jupyter
+	float mag_calibration[3] = {0.335, -0.150, -0.105};
+	float gyro_calibration[3] = {-0.0, -0.02, 0.01};
+
 	// ---- micro-ROS configuration ----
 	rcl_allocator_t allocator = rcl_get_default_allocator();
 	rclc_support_t support;
@@ -94,7 +121,7 @@ void main(void)
 	// ---- Main loop ----
 	gpio_pin_set(led, LED_PIN, 0);
 
-	sensfusion6Init();
+	sensfusion9Init();
 
 	geometry_msgs__msg__Vector3 eurler_angles;
 
@@ -138,44 +165,28 @@ void main(void)
 		sensor_sample_fetch_chan(imu_sensor, SENSOR_CHAN_GYRO_XYZ);
 		sensor_channel_get(imu_sensor, SENSOR_CHAN_GYRO_XYZ, gyro_xyz);
 
-		// sensor_sample_fetch(lis3mdl);
-		// sensor_channel_get(lis3mdl, SENSOR_CHAN_MAGN_XYZ, magn_xyz);
+		sensor_sample_fetch(lis3mdl);
+		sensor_channel_get(lis3mdl, SENSOR_CHAN_MAGN_XYZ, magn_xyz);
 
-		sensfusion6UpdateQ(	(float) sensor_value_to_double(&gyro_xyz[0]),
-						    (float) sensor_value_to_double(&gyro_xyz[1]),
-						    (float) sensor_value_to_double(&gyro_xyz[2]),
+		sensfusion9Update(	(float) (sensor_value_to_double(&gyro_xyz[0]) - gyro_calibration[0]),
+						    (float) (sensor_value_to_double(&gyro_xyz[1]) - gyro_calibration[1]),
+						    (float) (sensor_value_to_double(&gyro_xyz[2]) - gyro_calibration[2]),
 							(float) sensor_value_to_double(&accel_xyz[0]),
 							(float) sensor_value_to_double(&accel_xyz[1]),
 							(float) sensor_value_to_double(&accel_xyz[2]),
+							(float) (-sensor_value_to_double(&magn_xyz[0]) - mag_calibration[0]),
+							(float) (-sensor_value_to_double(&magn_xyz[1]) - mag_calibration[1]),
+							(float) ( sensor_value_to_double(&magn_xyz[2]) - mag_calibration[2]),
 							sample_rate);
-
-		// estimator.update(((float)loop_delay)/1e6, 
-		// 					sensor_value_to_double(&gyro_xyz[0]),
-		// 					sensor_value_to_double(&gyro_xyz[1]),
-		// 					sensor_value_to_double(&gyro_xyz[2]),
-		// 					sensor_value_to_double(&accel_xyz[0]),
-		// 					sensor_value_to_double(&accel_xyz[1]),
-		// 					sensor_value_to_double(&accel_xyz[2]), 
-		// 					-sensor_value_to_double(&magn_xyz[0]),
-		// 					-sensor_value_to_double(&magn_xyz[1]),
-		// 					sensor_value_to_double(&magn_xyz[2]));
-		// estimator.getAttitude(q);
-
-		// tf_stamped.transform.rotation.w = q[0];
-		// tf_stamped.transform.rotation.x = q[1];
-		// tf_stamped.transform.rotation.y = q[2];
-		// tf_stamped.transform.rotation.z = q[3];
-
-		sensfusion6GetQuaternion(&tf_stamped.transform.rotation.x,
+		
+		sensfusion9GetQuaternion(&tf_stamped.transform.rotation.x,
 								 &tf_stamped.transform.rotation.y,
 								 &tf_stamped.transform.rotation.z, 
 								 &tf_stamped.transform.rotation.w);
 
-		sensfusion6GetEulerRPY(	&eurler_angles.x,
+		sensfusion9GetEulerRPY(	&eurler_angles.x,
 								&eurler_angles.y,
 								&eurler_angles.z);
-
-		eurler_angles.z = sample_rate;
 
 		tf_stamped.header.stamp.nanosec = tv.tv_nsec;
 		tf_stamped.header.stamp.sec = tv.tv_sec;
