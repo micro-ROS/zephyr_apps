@@ -168,16 +168,16 @@ void main(void)
 		sensor_sample_fetch(lis3mdl);
 		sensor_channel_get(lis3mdl, SENSOR_CHAN_MAGN_XYZ, magn_xyz);
 
-		sensfusion9Update(	(float) (sensor_value_to_double(&gyro_xyz[0]) - gyro_calibration[0]),
-						    (float) (sensor_value_to_double(&gyro_xyz[1]) - gyro_calibration[1]),
-						    (float) (sensor_value_to_double(&gyro_xyz[2]) - gyro_calibration[2]),
-							(float) sensor_value_to_double(&accel_xyz[0]),
-							(float) sensor_value_to_double(&accel_xyz[1]),
-							(float) sensor_value_to_double(&accel_xyz[2]),
-							(float) (-sensor_value_to_double(&magn_xyz[0]) - mag_calibration[0]),
-							(float) (-sensor_value_to_double(&magn_xyz[1]) - mag_calibration[1]),
-							(float) ( sensor_value_to_double(&magn_xyz[2]) - mag_calibration[2]),
-							sample_rate);
+		sensfusion9Update((float) (sensor_value_to_double(&gyro_xyz[0]) - gyro_calibration[0]),
+						(float) (sensor_value_to_double(&gyro_xyz[1]) - gyro_calibration[1]),
+						(float) (sensor_value_to_double(&gyro_xyz[2]) - gyro_calibration[2]),
+						(float) sensor_value_to_double(&accel_xyz[0]),
+						(float) sensor_value_to_double(&accel_xyz[1]),
+						(float) sensor_value_to_double(&accel_xyz[2]),
+						(float) (-sensor_value_to_double(&magn_xyz[0]) - mag_calibration[0]),
+						(float) (-sensor_value_to_double(&magn_xyz[1]) - mag_calibration[1]),
+						(float) ( sensor_value_to_double(&magn_xyz[2]) - mag_calibration[2]),
+						sample_rate);
 		
 		float q[4];
 		sensfusion9GetQuaternion(q);
