@@ -10,7 +10,7 @@ endif()
 include($ENV{ZEPHYR_BASE}/cmake/app/boilerplate.cmake NO_POLICY_SCOPE)
 project(microrosapp C CXX)
 
-FILE(GLOB app_sources src/*.cpp)
+FILE(GLOB app_sources src/*.c)
 
 include_directories(src)
 

@@ -19,11 +19,12 @@
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
 
+#include <geometry_msgs/msg/vector3.h>
 #include <geometry_msgs/msg/transform_stamped.h>
 #include <tf2_msgs/msg/tf_message.h>
 #include <std_msgs/msg/empty.h>
 
-#include <attitude_estimator.h>
+#include <sensfusion9.h>
 
 #define STR_CAPACITY 50
 #define LED_PIN		 DT_GPIO_PIN(DT_ALIAS(led0), gpios)
@@ -44,6 +45,7 @@
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
 
 rcl_publisher_t tf_publisher;
+rcl_publisher_t euler_publisher;
 rcl_publisher_t trigger_publisher;
 
 uint32_t get_millis_from_timespec(struct timespec tv){
@@ -73,6 +75,33 @@ void main(void)
 	const struct device *button = device_get_binding(SW0_GPIO_LABEL);
 	gpio_pin_configure(button, SW0_GPIO_PIN, SW0_GPIO_FLAGS);
 
+	if (gpio_pin_get(button, SW0_GPIO_PIN)){
+		while(1){
+			sensor_sample_fetch_chan(imu_sensor, SENSOR_CHAN_ACCEL_XYZ);
+			sensor_channel_get(imu_sensor, SENSOR_CHAN_ACCEL_XYZ, accel_xyz);
+			sensor_sample_fetch_chan(imu_sensor, SENSOR_CHAN_GYRO_XYZ);
+			sensor_channel_get(imu_sensor, SENSOR_CHAN_GYRO_XYZ, gyro_xyz);
+			sensor_sample_fetch(lis3mdl);
+			sensor_channel_get(lis3mdl, SENSOR_CHAN_MAGN_XYZ, magn_xyz);
+
+			printf("Uni:%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f\r\n",
+				(float) sensor_value_to_double(&accel_xyz[0]),
+				(float) sensor_value_to_double(&accel_xyz[1]),
+				(float) sensor_value_to_double(&accel_xyz[2]),
+				(float) sensor_value_to_double(&gyro_xyz[0]),
+				(float) sensor_value_to_double(&gyro_xyz[1]),
+				(float) sensor_value_to_double(&gyro_xyz[2]),
+				(float) -sensor_value_to_double(&magn_xyz[0]),
+				(float) -sensor_value_to_double(&magn_xyz[1]),
+				(float) sensor_value_to_double(&magn_xyz[2])
+			);
+		}
+	}
+
+	// Calibration values for ST disco obtained using: https://learn.adafruit.com/adafruit-sensorlab-magnetometer-calibration/magnetic-calibration-with-jupyter
+	float mag_calibration[3] = {0.335, -0.150, -0.105};
+	float gyro_calibration[3] = {-0.0, -0.02, 0.01};
+
 	// ---- micro-ROS configuration ----
 	rcl_allocator_t allocator = rcl_get_default_allocator();
 	rclc_support_t support;
@@ -86,20 +115,15 @@ void main(void)
 
 	// Creating IMU publisher
 	RCCHECK(rclc_publisher_init_default(&tf_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(tf2_msgs, msg, TFMessage), "/tf"));
+	RCCHECK(rclc_publisher_init_default(&euler_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Vector3), "/euler"));
 	RCCHECK(rclc_publisher_init_default(&trigger_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Empty), "/trigger_moveit2"));
 
 	// ---- Main loop ----
 	gpio_pin_set(led, LED_PIN, 0);
 
-	using namespace std;
-	using namespace stateestimation;
-	
-	AttitudeEstimator estimator(true);
-	estimator.reset();
-	estimator.setMagCalib(0.0, 0.0, 0.0);
-	estimator.setQLTime(6.0);
-	estimator.setLambda(0.5);
-	double q[4];
+	sensfusion9Init();
+
+	geometry_msgs__msg__Vector3 eurler_angles;
 
 	geometry_msgs__msg__TransformStamped tf_stamped;
 
@@ -125,10 +149,15 @@ void main(void)
 	tf_message.transforms.capacity = 1;
 
 	struct timespec tv = {0};
+	struct timespec tv_end = {0};
 	struct timespec tv_debouncing = {0};
+	float sample_rate = 0.3;
 
-	uint32_t loop_delay = 10000;
+	uint32_t loop_delay_us = 10000;
+
 	while(1){
+		clock_gettime(CLOCK_MONOTONIC, &tv);
+
 		// Read IMU
 		sensor_sample_fetch_chan(imu_sensor, SENSOR_CHAN_ACCEL_XYZ);
 		sensor_channel_get(imu_sensor, SENSOR_CHAN_ACCEL_XYZ, accel_xyz);
@@ -136,33 +165,40 @@ void main(void)
 		sensor_sample_fetch_chan(imu_sensor, SENSOR_CHAN_GYRO_XYZ);
 		sensor_channel_get(imu_sensor, SENSOR_CHAN_GYRO_XYZ, gyro_xyz);
 
-
 		sensor_sample_fetch(lis3mdl);
 		sensor_channel_get(lis3mdl, SENSOR_CHAN_MAGN_XYZ, magn_xyz);
 
-		estimator.update(((float)loop_delay)/1e6, 
-							sensor_value_to_double(&gyro_xyz[0]),
-							sensor_value_to_double(&gyro_xyz[1]),
-							sensor_value_to_double(&gyro_xyz[2]),
-							sensor_value_to_double(&accel_xyz[0]),
-							sensor_value_to_double(&accel_xyz[1]),
-							sensor_value_to_double(&accel_xyz[2]), 
-							sensor_value_to_double(&magn_xyz[0]),
-							sensor_value_to_double(&magn_xyz[1]),
-							sensor_value_to_double(&magn_xyz[2]));
-		estimator.getAttitude(q);
+		sensfusion9Update((float) (sensor_value_to_double(&gyro_xyz[0]) - gyro_calibration[0]),
+						(float) (sensor_value_to_double(&gyro_xyz[1]) - gyro_calibration[1]),
+						(float) (sensor_value_to_double(&gyro_xyz[2]) - gyro_calibration[2]),
+						(float) sensor_value_to_double(&accel_xyz[0]),
+						(float) sensor_value_to_double(&accel_xyz[1]),
+						(float) sensor_value_to_double(&accel_xyz[2]),
+						(float) (-sensor_value_to_double(&magn_xyz[0]) - mag_calibration[0]),
+						(float) (-sensor_value_to_double(&magn_xyz[1]) - mag_calibration[1]),
+						(float) ( sensor_value_to_double(&magn_xyz[2]) - mag_calibration[2]),
+						sample_rate);
+		
+		float q[4];
+		sensfusion9GetQuaternion(q);
 
-		tf_stamped.transform.rotation.w = q[0];
-		tf_stamped.transform.rotation.x = q[1];
-		tf_stamped.transform.rotation.y = q[2];
-		tf_stamped.transform.rotation.z = q[3];
+		tf_stamped.transform.rotation.x = (double) q[1];
+		tf_stamped.transform.rotation.y = (double) q[2];
+		tf_stamped.transform.rotation.z = (double) q[3]; 
+		tf_stamped.transform.rotation.w = (double) q[0];
 
-		clock_gettime(CLOCK_MONOTONIC, &tv);
+		float angles[3];
+		sensfusion9GetEulerRPY(angles);
+
+		eurler_angles.x = angles[0];
+		eurler_angles.y = angles[1];
+		eurler_angles.z = angles[2];
 
 		tf_stamped.header.stamp.nanosec = tv.tv_nsec;
 		tf_stamped.header.stamp.sec = tv.tv_sec;
 
 		rcl_publish(&tf_publisher, &tf_message, NULL);
+		rcl_publish(&euler_publisher, &eurler_angles, NULL);
 
 		if (gpio_pin_get(button, SW0_GPIO_PIN) && (get_millis_from_timespec(tv) - get_millis_from_timespec(tv_debouncing) > 300))
 		{
@@ -170,7 +206,8 @@ void main(void)
 			rcl_publish(&trigger_publisher, &trigger, NULL);
 			tv_debouncing = tv;
 		}
-		
-	  	k_usleep(loop_delay);
+
+		clock_gettime(CLOCK_MONOTONIC, &tv_end);
+		sample_rate = (float) (get_millis_from_timespec(tv_end) - get_millis_from_timespec(tv))/1000;
 	}
 }
