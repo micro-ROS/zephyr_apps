@@ -26,7 +26,7 @@ rcl_publisher_t tof_publisher;
 
 void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 {
-	UNUSED(last_call_time);
+	RCLC_UNUSED(last_call_time);
 	if (timer != NULL) {
 		struct sensor_value value;
 		std_msgs__msg__Float32 msg;

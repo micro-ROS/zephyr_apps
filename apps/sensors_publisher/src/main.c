@@ -49,7 +49,7 @@ static inline float out_ev(struct sensor_value *val)
 
 void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 {
-  UNUSED(last_call_time);
+  RCLC_UNUSED(last_call_time);
   if (timer != NULL) {
     RCSOFTCHECK(rcl_publish(&tof_publisher, &tof_data, NULL));
     RCSOFTCHECK(rcl_publish(&imu_publisher, &imu_data, NULL));
