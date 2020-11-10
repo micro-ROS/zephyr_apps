@@ -128,7 +128,7 @@ void main(void)
 	geometry_msgs__msg__TransformStamped tf_stamped;
 
 	tf_stamped.header.frame_id.data = (char*)malloc(STR_CAPACITY*sizeof(char));
-	char string1[] = "/panda_link0";
+	char string1[] = "/world";
 	memcpy(tf_stamped.header.frame_id.data, string1, strlen(string1) + 1);
 	tf_stamped.header.frame_id.size = strlen(tf_stamped.header.frame_id.data);
 	tf_stamped.header.frame_id.capacity = STR_CAPACITY;
