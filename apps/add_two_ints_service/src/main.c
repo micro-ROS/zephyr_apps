@@ -10,28 +10,8 @@
 #include <std_msgs/msg/int32.h>
 #include "example_interfaces/srv/add_two_ints.h"
 
-rcl_init_options_t options;
-rcl_node_options_t node_ops;
-rcl_node_t node;
-rclc_support_t support;
-rcl_allocator_t allocator;
-rclc_executor_t executor;
-
-rcl_service_options_t service_options;
-rcl_service_t service;
-const rosidl_service_type_support_t * service_type_support;
-rcl_wait_set_t wait_set;
-rmw_request_id_t req_id;
-example_interfaces__srv__AddTwoInts_Response res;
-example_interfaces__srv__AddTwoInts_Request req;
-
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc);}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
-
-const char * service_name = "/add_two_ints";
-
-example_interfaces__srv__AddTwoInts_Request req;
-example_interfaces__srv__AddTwoInts_Response res;
 
 void service_callback(const void * req, void * res){
   example_interfaces__srv__AddTwoInts_Request * req_in = (example_interfaces__srv__AddTwoInts_Request *) req;
@@ -44,23 +24,29 @@ void service_callback(const void * req, void * res){
 
 void main(void)
 {	
-    allocator = rcl_get_default_allocator();
+    rcl_allocator_t allocator = rcl_get_default_allocator();
 
     // create init_options
+    rclc_support_t support;
     RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
 
     // create node
+    rcl_node_t node;
     RCCHECK(rclc_node_init_default(&node, "add_twoints_client_rclc", "", &support));
 
     // create service
+    rcl_service_t service;
     RCCHECK(rclc_service_init_default(&service, &node, ROSIDL_GET_SRV_TYPE_SUPPORT(example_interfaces, srv, AddTwoInts), "/addtwoints"));
 
     // create executor
+    rclc_executor_t executor;
     RCCHECK(rclc_executor_init(&executor, &support.context, 1, &allocator));
 
     unsigned int rcl_wait_timeout = 10;   // in ms
     RCCHECK(rclc_executor_set_timeout(&executor, RCL_MS_TO_NS(rcl_wait_timeout)));
 
+    example_interfaces__srv__AddTwoInts_Response res;
+    example_interfaces__srv__AddTwoInts_Request req;
     RCCHECK(rclc_executor_add_service(&executor, &service, &req, &res, service_callback));
 
     rclc_executor_spin(&executor);
