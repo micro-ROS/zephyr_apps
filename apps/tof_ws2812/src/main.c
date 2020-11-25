@@ -108,7 +108,7 @@ void main(void)
 	RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
 
 	// create node
-	rcl_node_t node = rcl_get_zero_initialized_node();
+	rcl_node_t node;
 	RCCHECK(rclc_node_init_default(&node, "zephyr_tof_leds", "", &support));
 
 	// Creating tof subscriber
@@ -118,7 +118,7 @@ void main(void)
 	RCCHECK(rclc_subscription_init_default(&tof_subscription, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/sensors/tof"));
 
 	// Creating a executor
-	rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
+	rclc_executor_t executor;
 	RCCHECK(rclc_executor_init(&executor, &support.context, 2, &allocator));
 
 	unsigned int rcl_wait_timeout = 10;   // in ms
