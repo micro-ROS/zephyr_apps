@@ -86,9 +86,6 @@ void main(void)
 	// Creating a executor
 	rclc_executor_t executor;
 	RCCHECK(rclc_executor_init(&executor, &support.context, 2, &allocator));
-
-	unsigned int rcl_wait_timeout = 10;   // in ms
-	RCCHECK(rclc_executor_set_timeout(&executor, RCL_MS_TO_NS(rcl_wait_timeout)));
 	RCCHECK(rclc_executor_add_subscription(&executor, &verbosity_subscription, &verbosity_msg, &verbosity_subscription_callback, ON_NEW_DATA));
 	RCCHECK(rclc_executor_add_subscription(&executor, &thr_subscription, &thr_msg, &thr_subscription_callback, ON_NEW_DATA));
 
