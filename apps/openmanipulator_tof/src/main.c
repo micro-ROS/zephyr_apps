@@ -68,8 +68,7 @@ void main(void)
 
 	// Creating a timer
 	rcl_timer_t timer;
-	const unsigned int timer_timeout = 10;
-	RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(timer_timeout), timer_callback));
+	RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(10), timer_callback));
 
 	// Creating a executor
 	rclc_executor_t executor;

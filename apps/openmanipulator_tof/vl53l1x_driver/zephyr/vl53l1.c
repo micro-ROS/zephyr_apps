@@ -57,7 +57,7 @@ struct vl53l1x_data {
 
 static int vl53l1x_sample_fetch(struct device *dev, enum sensor_channel chan)
 {
-	struct vl53l1x_data *drv_data = dev->driver_data;
+	struct vl53l1x_data *drv_data = dev->data;
 	VL53L1_Error ret;
 
 	__ASSERT_NO_MSG(chan == SENSOR_CHAN_ALL
@@ -90,7 +90,7 @@ static int vl53l1x_channel_get(struct device *dev,
 			       enum sensor_channel chan,
 			       struct sensor_value *val)
 {
-	struct vl53l1x_data *drv_data = (struct vl53l1x_data *)dev->driver_data;
+	struct vl53l1x_data *drv_data = (struct vl53l1x_data *)dev->data;
 
 	__ASSERT_NO_MSG(chan == SENSOR_CHAN_DISTANCE
 			|| chan == SENSOR_CHAN_PROX);
@@ -118,7 +118,7 @@ static const struct sensor_driver_api vl53l1x_api_funcs = {
 
 static int vl53l1x_init(struct device *dev)
 {
-	struct vl53l1x_data *drv_data = dev->driver_data;
+	struct vl53l1x_data *drv_data = dev->data;
 	VL53L1_Error ret;
 
 	LOG_DBG("enter in %s", __func__);
@@ -146,7 +146,7 @@ static int vl53l1x_init(struct device *dev)
 		return -ENOTSUP;
 	}
 
-	u16_t vl53l1_id = 0U;
+	uint16_t vl53l1_id = 0U;
 	ret = VL53L1_RdWord(&drv_data->vl53l1x,
 			     VL53L1_MODEL_ID_REG,
 			     (uint16_t *) &vl53l1_id);
