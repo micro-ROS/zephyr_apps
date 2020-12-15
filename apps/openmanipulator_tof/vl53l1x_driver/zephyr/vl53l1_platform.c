@@ -50,7 +50,7 @@ VL53L1_Error VL53L1_ReadMulti(VL53L1_DEV Dev, int index, uint8_t *pdata,
 {
 	VL53L1_Error Status = VL53L1_ERROR_NONE;
 	int32_t status_int;
-	u16_t index_inv = INVERT_U16(index);
+	uint16_t index_inv = INVERT_U16(index);
 
 	status_int = i2c_write_read(Dev->i2c, Dev->I2cDevAddr, &index_inv, 2, pdata, count);
 
@@ -68,7 +68,7 @@ VL53L1_Error VL53L1_WrByte(VL53L1_DEV Dev, int index, uint8_t data)
 	VL53L1_Error Status = VL53L1_ERROR_NONE;
 	int32_t status_int;
 
-	u8_t tx_buf[3] = {U16_LSB(index), U16_MSB(index), data};
+	uint8_t tx_buf[3] = {U16_LSB(index), U16_MSB(index), data};
 
 	status_int = i2c_write(Dev->i2c, tx_buf, 3, Dev->I2cDevAddr);
 
@@ -155,7 +155,7 @@ VL53L1_Error VL53L1_RdByte(VL53L1_DEV Dev, int index, uint8_t *data)
 	VL53L1_Error Status = VL53L1_ERROR_NONE;
 	int32_t status_int;
 
-	u16_t index_inv = INVERT_U16(index);
+	uint16_t index_inv = INVERT_U16(index);
 
 
 	status_int = i2c_write_read(Dev->i2c, Dev->I2cDevAddr, &index_inv, 2, data, 1);
@@ -174,7 +174,7 @@ VL53L1_Error VL53L1_RdWord(VL53L1_DEV Dev, int index, uint16_t *data)
 	int32_t status_int;
 	uint8_t buf[2];
 
-	u16_t index_inv = INVERT_U16(index);
+	uint16_t index_inv = INVERT_U16(index);
 
 	status_int = i2c_write_read(Dev->i2c, Dev->I2cDevAddr, &index_inv, 2, buf, 2);
 
@@ -191,9 +191,9 @@ VL53L1_Error  VL53L1_RdDWord(VL53L1_DEV Dev, int index, uint32_t *data)
 {
 	VL53L1_Error Status = VL53L1_ERROR_NONE;
 	int32_t status_int;
-	u8_t buf[4];
+	uint8_t buf[4];
 
-	u16_t index_inv = INVERT_U16(index);
+	uint16_t index_inv = INVERT_U16(index);
 
 	status_int = i2c_write_read(Dev->i2c, Dev->I2cDevAddr, &index_inv, 2, buf, 4);
 
