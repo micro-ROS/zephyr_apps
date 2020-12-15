@@ -91,7 +91,7 @@ void main(void)
 	RCCHECK(rclc_publisher_init_default(
 		&publisher,
 		&node,
-		ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, String),
+		ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
 		"zephyr_int32_publisher"));
 
 	// create timer,
@@ -111,8 +111,8 @@ void main(void)
 	msg.data = 0;
 	
 	while(1){
-    	rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10));
-		usleep(10000);
+    	rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
+		usleep(100000);
 	}
 
 	RCCHECK(rcl_publisher_fini(&publisher, &node))
