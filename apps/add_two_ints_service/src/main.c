@@ -6,6 +6,8 @@
 #include <sys/printk.h>
 
 #include <rcl/rcl.h>
+#include <rclc/rclc.h>
+#include <rclc/executor.h>
 #include <rcl/error_handling.h>
 #include <std_msgs/msg/int32.h>
 #include "example_interfaces/srv/add_two_ints.h"
