@@ -12,6 +12,9 @@
 #include <std_msgs/msg/int32.h>
 #include "example_interfaces/srv/add_two_ints.h"
 
+#include <rmw_uros/options.h>
+#include <microros_transports.h>
+
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc);}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printk("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
 
@@ -26,6 +29,17 @@ void service_callback(const void * req, void * res){
 
 void main(void)
 {	
+  	// Set custom transports
+    rmw_uros_set_custom_transport(
+      MICRO_ROS_FRAMING_REQUIRED,
+      (void *) &default_params,
+      zephyr_transport_open,
+      zephyr_transport_close,
+      zephyr_transport_write,
+      zephyr_transport_read
+    );
+
+    // Init micro-ROS
     rcl_allocator_t allocator = rcl_get_default_allocator();
 
     // create init_options

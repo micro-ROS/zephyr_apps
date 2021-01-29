@@ -10,7 +10,19 @@ endif()
 include($ENV{ZEPHYR_BASE}/cmake/app/boilerplate.cmake NO_POLICY_SCOPE)
 project(microrosapp C CXX)
 
-FILE(GLOB app_sources src/*.c)
+set(microros_src_dir   ${MICRO_ROS_FIRMWARE_DIR}/zephyr_apps/microros_extensions)
+set(microros_build_dir ${MICRO_ROS_FIRMWARE_DIR}/build/microros_extensions)
+
+if(${MICRO_ROS_TRASNPORT} STREQUAL "serial")
+    add_compile_definitions(MICRO_ROS_TRANSPORT_SERIAL)
+elseif(${MICRO_ROS_TRASNPORT} STREQUAL "udp")
+    add_compile_definitions(MICRO_ROS_TRANSPORT_UDP)
+elseif(${MICRO_ROS_TRASNPORT} STREQUAL "serial-usb")
+    add_compile_definitions(MICRO_ROS_TRANSPORT_SERIALUSB)
+endif()
+
+FILE(GLOB app_sources src/*.c ${microros_src_dir}/microros_transports.c)
+include_directories(${microros_src_dir})
 
 target_sources(app PRIVATE ${app_sources})
 

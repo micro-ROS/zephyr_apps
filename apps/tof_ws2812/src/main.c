@@ -15,6 +15,9 @@
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
 
+#include <rmw_uros/options.h>
+#include <microros_transports.h>
+
 #include <std_msgs/msg/bool.h>
 #include <std_msgs/msg/int32.h>
 
@@ -83,6 +86,16 @@ void tof_subscription_callback(const void * msgin)
 
 void main(void)
 {	
+	// Set custom transports
+	rmw_uros_set_custom_transport(
+		MICRO_ROS_FRAMING_REQUIRED,
+		(void *) &default_params,
+		zephyr_transport_open,
+		zephyr_transport_close,
+		zephyr_transport_write,
+		zephyr_transport_read
+	);
+
 	// ---- Devices configuration ----
 	strip = device_get_binding(DT_LABEL(DT_ALIAS(led_strip)));
 
