@@ -3,6 +3,9 @@
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
 
+#include <rmw_uros/options.h>
+#include <microros_transports.h>
+
 #include <std_msgs/msg/header.h>
 
 #include <stdio.h>
@@ -77,6 +80,17 @@ void pong_subscription_callback(const void * msgin)
 
 void main(void)
 {
+	// Set custom transports
+	rmw_uros_set_custom_transport(
+		MICRO_ROS_FRAMING_REQUIRED,
+		(void *) &default_params,
+		zephyr_transport_open,
+		zephyr_transport_close,
+		zephyr_transport_write,
+		zephyr_transport_read
+	);
+
+	// Init micro-ROS
 	rcl_allocator_t allocator = rcl_get_default_allocator();
 	rclc_support_t support;
 

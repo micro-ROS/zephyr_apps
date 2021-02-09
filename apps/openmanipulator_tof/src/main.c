@@ -12,6 +12,9 @@
 #include <rclc/executor.h>
 #include <rcl/error_handling.h>
 
+#include <rmw_uros/options.h>
+#include <microros_transports.h>
+
 #include <std_msgs/msg/float32.h>
 
 #define PIN	DT_GPIO_PIN(DT_ALIAS(led0), gpios)
@@ -41,6 +44,16 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 
 void main(void)
 {	
+	// Set custom transports
+	rmw_uros_set_custom_transport(
+		MICRO_ROS_FRAMING_REQUIRED,
+		(void *) &default_params,
+		zephyr_transport_open,
+		zephyr_transport_close,
+		zephyr_transport_write,
+		zephyr_transport_read
+	);
+
 	// ---- Sensor configuration ----
 	led = device_get_binding(DT_GPIO_LABEL(DT_ALIAS(led0), gpios));
 	gpio_pin_configure(led, PIN, GPIO_OUTPUT_ACTIVE | 0);

@@ -12,6 +12,9 @@
 #include <rclc/executor.h>
 #include <rcl/error_handling.h>
 
+#include <rmw_uros/options.h>
+#include <microros_transports.h>
+
 #include <std_msgs/msg/int32.h>
 #include <std_msgs/msg/bool.h>
 
@@ -47,6 +50,16 @@ void thr_subscription_callback(const void * msgin)
 
 void main(void)
 {	
+	// Set custom transports
+	rmw_uros_set_custom_transport(
+		MICRO_ROS_FRAMING_REQUIRED,
+		(void *) &default_params,
+		zephyr_transport_open,
+		zephyr_transport_close,
+		zephyr_transport_write,
+		zephyr_transport_read
+	);
+	
 	// ---- Devices configuration ----
 	led = device_get_binding(DT_GPIO_LABEL(DT_ALIAS(led0), gpios));
 	gpio_pin_configure(led, PIN, GPIO_OUTPUT_ACTIVE | 0);

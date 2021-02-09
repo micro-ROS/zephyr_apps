@@ -19,6 +19,9 @@
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
 
+#include <rmw_uros/options.h>
+#include <microros_transports.h>
+
 #include <geometry_msgs/msg/vector3.h>
 #include <geometry_msgs/msg/transform_stamped.h>
 #include <tf2_msgs/msg/tf_message.h>
@@ -54,6 +57,16 @@ uint32_t get_millis_from_timespec(struct timespec tv){
 
 void main(void)
 {	
+	// Set custom transports
+	rmw_uros_set_custom_transport(
+		MICRO_ROS_FRAMING_REQUIRED,
+		(void *) &default_params,
+		zephyr_transport_open,
+		zephyr_transport_close,
+		zephyr_transport_write,
+		zephyr_transport_read
+	);
+
 	//  LED configuration
 	const struct device *led = device_get_binding(DT_GPIO_LABEL(DT_ALIAS(led0), gpios));
 	gpio_pin_configure(led, LED_PIN, GPIO_OUTPUT_ACTIVE | 0);
