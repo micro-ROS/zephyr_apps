@@ -43,6 +43,7 @@ typedef struct {
 
 #if defined(MICRO_ROS_TRANSPORT_SERIAL)
     #define MICRO_ROS_FRAMING_REQUIRED true
+    // Set the UART used for communication. e.g. {.fd = 0} leads to UART_0 being used.
     static zephyr_transport_params_t default_params = {.fd = 0};
 #elif defined(MICRO_ROS_TRANSPORT_UDP)
     #define MICRO_ROS_FRAMING_REQUIRED false
