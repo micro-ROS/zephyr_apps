@@ -19,7 +19,7 @@
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
 
-#include <rmw_microros/api.h>
+#include <rmw_microros/rmw_microros.h>
 #include <microros_transports.h>
 
 #include <geometry_msgs/msg/vector3.h>
