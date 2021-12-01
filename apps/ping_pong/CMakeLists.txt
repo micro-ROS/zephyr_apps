@@ -2,7 +2,7 @@
 
 cmake_minimum_required(VERSION 3.13.1)
 
-set(COMPATIBLE_BOARDS disco_l475_iot1 olimex_stm32_e407 native_posix nucleo_h743zi nucleo_f746zg)
+set(COMPATIBLE_BOARDS disco_l475_iot1 olimex_stm32_e407 native_posix nucleo_h743zi nucleo_f746zg blackpill_f411ce blackpill_f401ce)
 if(NOT ${BOARD} IN_LIST COMPATIBLE_BOARDS)
     message(FATAL_ERROR "App $ENV{UROS_APP} not compatible with board ${BOARD}")
 endif()
