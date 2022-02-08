@@ -41,7 +41,7 @@ set(external_project_cflags
     )
 
 set(external_project_cxxflags
-    "${includes_cxx} ${definitions_cxx} ${options_cxx} ${system_includes_cxx}" 
+    "${includes_cxx} ${definitions_cxx} ${options_cxx} ${system_includes_cxx}"
     )
 
 include(ExternalProject)
@@ -88,5 +88,11 @@ add_dependencies(microroslib_project offsets_h)
 
 set_target_properties(microroslib PROPERTIES IMPORTED_LOCATION             ${MICROROS_LIB_DIR}/libmicroros.a)
 set_target_properties(microroslib PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${MICROROS_INCLUDE_DIR})
+
+set(INCLUDE_ROS2_PACKAGES rmw;rcl;rcl_action;rcl_lifecycle;rcl_logging_interface)
+foreach(pkg ${INCLUDE_ROS2_PACKAGES})
+    file(MAKE_DIRECTORY ${MICROROS_INCLUDE_DIR}/${pkg})
+    target_include_directories(microroslib INTERFACE ${MICROROS_INCLUDE_DIR}/${pkg})
+endforeach()
 
 target_link_libraries(app PUBLIC microroslib)
