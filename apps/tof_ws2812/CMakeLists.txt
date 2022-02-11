@@ -94,7 +94,7 @@ add_dependencies(microroslib_project offsets_h)
 set_target_properties(microroslib PROPERTIES IMPORTED_LOCATION             ${MICROROS_LIB_DIR}/libmicroros.a)
 set_target_properties(microroslib PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${MICROROS_INCLUDE_DIR})
 
-set(INCLUDE_ROS2_PACKAGES rmw;rcl;rcl_action;rcl_lifecycle;rcl_logging_interface)
+set(INCLUDE_ROS2_PACKAGES rmw;rcl;rcl_action;rcl_lifecycle;rcl_logging_interface;rosidl_runtime_c;rosidl_typesupport_interface)
 foreach(pkg ${INCLUDE_ROS2_PACKAGES})
     file(MAKE_DIRECTORY ${MICROROS_INCLUDE_DIR}/${pkg})
     target_include_directories(microroslib INTERFACE ${MICROROS_INCLUDE_DIR}/${pkg})
