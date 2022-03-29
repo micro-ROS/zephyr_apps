@@ -44,18 +44,36 @@ set(external_project_cxxflags
     "${includes_cxx} ${definitions_cxx} ${options_cxx} ${system_includes_cxx}"
     )
 
-execute_process(
-    WORKING_DIRECTORY ${microros_src_dir}
-    COMMAND
+include(ExternalProject)
+
+set(microros_src_dir   ${MICRO_ROS_FIRMWARE_DIR}/zephyr_apps/microros_extensions)
+set(microros_build_dir ${MICRO_ROS_FIRMWARE_DIR}/build/microros_extensions)
+
+if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")
+set(submake "$(MAKE)")
+else()
+set(submake "make")
+endif()
+
+ExternalProject_Add(
+    microroslib_project                 # Name for custom target
+    PREFIX     ${microros_build_dir}    # Root dir for entire project
+    SOURCE_DIR ${microros_src_dir}
+    BINARY_DIR ${microros_src_dir}      # This particular build system is invoked from the root
+    CONFIGURE_COMMAND ""                # Skip configuring the project, e.g. with autoconf
+    BUILD_COMMAND
         ${submake}
-        PREFIX=${microros_src_dir}
-        CC=${CMAKE_C_COMPILER}
-        AR=${CMAKE_AR}
-        CFLAGS=${external_project_cflags}
-        CXX=${CMAKE_CXX_COMPILER}
-        CXXFLAGS=${external_project_cxxflags}
-        APP_META=$ENV{UROS_APP_FOLDER}/app-colcon.meta
-)
+            PREFIX=${microros_src_dir}
+            CC=${CMAKE_C_COMPILER}
+            AR=${CMAKE_AR}
+            CFLAGS=${external_project_cflags}
+            CXX=${CMAKE_CXX_COMPILER}
+            CXXFLAGS=${external_project_cxxflags}
+            APP_META=$ENV{UROS_APP_FOLDER}/app-colcon.meta
+
+    INSTALL_COMMAND ""      # This particular build system has no install command
+    BUILD_BYPRODUCTS ${MICROROS_LIB_DIR}/libmicroros.a
+    )
 
 file(MAKE_DIRECTORY ${MICRO_ROS_FIRMWARE_DIR}/mcu_ws/install)
 file(MAKE_DIRECTORY ${MICRO_ROS_FIRMWARE_DIR}/mcu_ws/install/include)
@@ -64,15 +82,28 @@ set(MICROROS_LIB_DIR     ${MICRO_ROS_FIRMWARE_DIR}/mcu_ws/install)
 set(MICROROS_INCLUDE_DIR ${MICRO_ROS_FIRMWARE_DIR}/mcu_ws/install/include)
 
 add_library(microroslib STATIC IMPORTED GLOBAL)
+add_dependencies(
+    microroslib
+    microroslib_project
+    )
+
+add_dependencies(microroslib_project offsets_h)
+
 set_target_properties(microroslib PROPERTIES IMPORTED_LOCATION             ${MICROROS_LIB_DIR}/libmicroros.a)
 set_target_properties(microroslib PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${MICROROS_INCLUDE_DIR})
 
-file(GLOB include_folders LIST_DIRECTORIES true CONFIGURE_DEPENDS ${MICROROS_INCLUDE_DIR}/*)
-foreach(include_folder ${include_folders})
-    if(IS_DIRECTORY ${include_folder})
-        get_filename_component(folder_name ${include_folder} NAME)
-        target_include_directories(microroslib INTERFACE ${MICROROS_INCLUDE_DIR}/${folder_name})
-    endif()
+execute_process(
+    COMMAND
+        make get_package_names
+    WORKING_DIRECTORY
+        ${microros_src_dir}
+    OUTPUT_VARIABLE
+        INCLUDE_ROS2_PACKAGES
+    )
+
+foreach(pkg ${INCLUDE_ROS2_PACKAGES})
+    file(MAKE_DIRECTORY ${MICROROS_INCLUDE_DIR}/${pkg})
+    target_include_directories(microroslib INTERFACE ${MICROROS_INCLUDE_DIR}/${pkg})
 endforeach()
 
 target_link_libraries(app PUBLIC microroslib)

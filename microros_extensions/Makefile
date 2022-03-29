@@ -60,6 +60,7 @@ colcon_compile: arm_toolchain host_toolchain
 		--packages-ignore-regex=.*_cpp \
 		--metas $(UROS_DIR)/colcon.meta $(APP_META) \
 		--cmake-args \
+		-Wno-dev \
 		-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=OFF \
 		-DTHIRDPARTY=ON \
 		-DBUILD_SHARED_LIBS=OFF \
@@ -67,6 +68,11 @@ colcon_compile: arm_toolchain host_toolchain
 		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 		-DCMAKE_TOOLCHAIN_FILE=$(TOOLCHAIN) \
 		-DCMAKE_VERBOSE_MAKEFILE=ON; \
+
+get_package_names:
+	@cd $(UROS_DIR); \
+	colcon list | awk '{print $$1}' | awk -v d=";" '{s=(NR==1?s:s d)$$0}END{print s}'
+
 
 libmicroros: colcon_compile
 	mkdir -p $(UROS_DIR)/libmicroros; cd $(UROS_DIR)/libmicroros; \
