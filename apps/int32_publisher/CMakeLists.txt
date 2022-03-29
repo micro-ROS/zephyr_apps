@@ -68,8 +68,6 @@ add_dependencies(
     microroslib
     )
 
-add_dependencies(microroslib_project offsets_h)
-
 set_target_properties(microroslib PROPERTIES IMPORTED_LOCATION             ${MICROROS_LIB_DIR}/libmicroros.a)
 set_target_properties(microroslib PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${MICROROS_INCLUDE_DIR})
 
