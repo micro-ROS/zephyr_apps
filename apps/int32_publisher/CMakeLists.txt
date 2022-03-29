@@ -44,8 +44,6 @@ set(external_project_cxxflags
     "${includes_cxx} ${definitions_cxx} ${options_cxx} ${system_includes_cxx}"
     )
 
-include(ExternalProject)
-
 execute_process(
     WORKING_DIRECTORY ${microros_src_dir}
     COMMAND
@@ -68,7 +66,6 @@ set(MICROROS_INCLUDE_DIR ${MICRO_ROS_FIRMWARE_DIR}/mcu_ws/install/include)
 add_library(microroslib STATIC IMPORTED GLOBAL)
 add_dependencies(
     microroslib
-    microroslib_project
     )
 
 add_dependencies(microroslib_project offsets_h)
