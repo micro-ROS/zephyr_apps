@@ -2,8 +2,8 @@
 Changelog for package micro_ros_zephyr_apps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+3.0.0 (2022-05-25)
+------------------
 * Fix include paths (`#52 <https://github.com/micro-ROS/zephyr_apps/issues/52>`_)
 * Fix include paths
 * Fix include paths (`#51 <https://github.com/micro-ROS/zephyr_apps/issues/51>`_)
