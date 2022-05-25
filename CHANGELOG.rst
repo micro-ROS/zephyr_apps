@@ -2,8 +2,8 @@
 Changelog for package micro_ros_zephyr_apps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.0.0 (2022-05-25)
+------------------
 * Add Blackpill boards to the compatible demos (`#48 <https://github.com/micro-ROS/zephyr_apps/issues/48>`_) (`#49 <https://github.com/micro-ROS/zephyr_apps/issues/49>`_)
 * multichange tool (`#44 <https://github.com/micro-ROS/zephyr_apps/issues/44>`_)
 * Modify RMW API include (`#38 <https://github.com/micro-ROS/zephyr_apps/issues/38>`_)
