@@ -47,7 +47,7 @@ typedef struct {
     static zephyr_transport_params_t default_params = {.fd = 0};
 #elif defined(MICRO_ROS_TRANSPORT_UDP)
     #define MICRO_ROS_FRAMING_REQUIRED false
-    static zephyr_transport_params_t default_params = {.ip = "192.168.1.100", .port = "8888"};
+    static zephyr_transport_params_t default_params = {{0,0,0}, "192.168.1.100", "8888"};
 #elif defined(MICRO_ROS_TRANSPORT_SERIALUSB)
     #define MICRO_ROS_FRAMING_REQUIRED true
     static zephyr_transport_params_t default_params;
