@@ -2,7 +2,20 @@
 Changelog for package micro_ros_zephyr_apps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-3.0.0 (2022-05-25)
+Forthcoming
+-----------
+* Micro-ros connection manager on an stm32. Ported to zephyr from the Arduino apps example. (`#61 <https://github.com/micro-ROS/zephyr_apps/issues/61>`_) (`#62 <https://github.com/micro-ROS/zephyr_apps/issues/62>`_)
+  (cherry picked from commit dd9eb8a43e8de476c44e126b34c552fc3f4fabb0)
+  Co-authored-by: Gerard Sequeira <gsequeira@boston-engineering.com>
+* Adjust default_params intialization for cpp compatibility to avoid - Designator member outside agrgregate error, when comiler is cpp. (`#57 <https://github.com/micro-ROS/zephyr_apps/issues/57>`_) (`#59 <https://github.com/micro-ROS/zephyr_apps/issues/59>`_)
+  (cherry picked from commit c2f6d2043db205c153a9ef88ddc39dac30bdc2d9)
+  Co-authored-by: Gerard Sequeira <gsequeira@boston-engineering.com>
+* Add UDP config support. Tested on stm32743zi nucleo. (`#53 <https://github.com/micro-ROS/zephyr_apps/issues/53>`_) (`#56 <https://github.com/micro-ROS/zephyr_apps/issues/56>`_)
+  (cherry picked from commit 5929a3a3ea4ca2859e7eb5a18a7b00c29552898f)
+  Co-authored-by: Gerard Sequeira <gsequeira@boston-engineering.com>
+* Contributors: mergify[bot]
+
+4.0.0 (2022-05-25)
 ------------------
 * Fix include paths (`#52 <https://github.com/micro-ROS/zephyr_apps/issues/52>`_)
 * Fix include paths
