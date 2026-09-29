@@ -16,7 +16,7 @@
 
 #define STRING_BUFFER_LEN 50
 
-#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc); return 1;}}
+#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc); return;}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
 
 rcl_publisher_t ping_publisher;
@@ -32,9 +32,10 @@ int device_id;
 int seq_no;
 int pong_count;
 
-void ping_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
+void ping_timer_callback(rcl_timer_t * timer, int64_t last_call_time, uintptr_t user_data)
 {
 	(void) last_call_time;
+	(void) user_data;
 
 	if (timer != NULL) {
 
@@ -144,7 +145,7 @@ void main(void)
 
 	while(1){
 		rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
-		usleep(100000);
+		k_msleep(100);
 	}	
 	
 	RCCHECK(rcl_publisher_fini(&ping_publisher, &node));
