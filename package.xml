@@ -5,6 +5,6 @@
   <version>5.0.1</version>
   <description>Zephyr RTOS apps for micro-ROS</description>
   <maintainer email="eugeniocollado@eprosima.com">Eugenio Collado</maintainer>
-  <maintainer email="carlosespinoza@eprosima.com">Carlos Espinoza</maintainer>
+  <maintainer email="davidlaseca@eprosima.com">David Laseca</maintainer>
   <license>Apache License 2.0</license>
 </package>
