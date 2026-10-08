@@ -2,8 +2,8 @@
 Changelog for package micro_ros_zephyr_apps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+7.0.0 (2026-10-08)
+------------------
 * Update maintainers (`#72 <https://github.com/micro-ROS/zephyr_apps/issues/72>`_)
 * Update ping_pong app (`#71 <https://github.com/micro-ROS/zephyr_apps/issues/71>`_)
 * Update maintainers (`#67 <https://github.com/micro-ROS/zephyr_apps/issues/67>`_) (`#70 <https://github.com/micro-ROS/zephyr_apps/issues/70>`_)
